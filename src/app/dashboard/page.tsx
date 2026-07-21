@@ -1,7 +1,7 @@
 'use client';
 
 import { supabase } from '@/utils/supabase';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
@@ -12,14 +12,11 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [displayName, setDisplayName] = useState('');
 
-  // Trạng thái quản lý BXH thực tế và Bottom Sheet xem chéo profile
-  const [rankingTab, setRankingTab] = useState<'streak' | 'words'>('streak');
+  // Trạng thái quản lý BXH và Bottom Sheet xem chéo profile
   const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string>('');
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
-
-  const rankingTabRef = useRef(rankingTab);
-  rankingTabRef.current = rankingTab;
+  const [totalSystemCards, setTotalSystemCards] = useState<number>(0);
 
   useEffect(() => {
     const checkUserAndFetchData = async () => {
@@ -36,10 +33,19 @@ export default function DashboardPage() {
       setDisplayName(currentUserName);
 
       try {
-        // 1. Kéo dữ liệu thuộc bài từ bảng user_memorized_cards
+        // 1. Đếm tổng số card_id hiện có trong bảng flashcards
+        const { count: totalCards } = await supabase
+          .from('flashcards')
+          .select('card_id', { count: 'exact', head: true });
+        
+        if (totalCards) {
+          setTotalSystemCards(totalCards);
+        }
+
+        // 2. Kéo dữ liệu thuộc bài từ bảng user_memorized_cards
         const { data: memorizedData, error } = await supabase
           .from('user_memorized_cards')
-          .select('user_id');
+          .select('user_id, card_id');
 
         if (error) throw error;
 
@@ -48,7 +54,7 @@ export default function DashboardPage() {
           userCounts[item.user_id] = (userCounts[item.user_id] || 0) + 1;
         });
 
-        // 2. Kéo toàn bộ dữ liệu từ bảng profiles để ánh xạ Avatar & Streak cứng từ Server
+        // 3. Kéo dữ liệu người dùng từ bảng profiles để ánh xạ Avatar & Tên
         const { data: profileData } = await supabase.from('profiles').select('*');
         
         let nameCol = 'display_name';
@@ -60,13 +66,12 @@ export default function DashboardPage() {
           else if ('name' in firstRow) nameCol = 'name';
         }
 
-        const profileMap: { [key: string]: { name: string; avatar: string; streak: number } } = {};
+        const profileMap: { [key: string]: { name: string; avatar: string } } = {};
         profileData?.forEach((p: any) => {
           if (p.id) {
             profileMap[p.id] = {
               name: p[nameCol] || '',
-              avatar: p.avatar_url || '',
-              streak: p.streak || 0
+              avatar: p.avatar_url || ''
             };
           }
         });
@@ -76,39 +81,38 @@ export default function DashboardPage() {
           setCurrentAvatarUrl(profileMap[user.id].avatar);
         }
 
-        // 3. Tạo cấu trúc mảng xếp hạng chuẩn (Kèm Avatar và Streak từ Server)
-        const realLeaderboard = Object.keys(userCounts).map((uid) => {
-          const isMe = uid === user.id;
-          const pData = profileMap[uid] || {};
-          
-          return {
-            id: uid,
-            display_name: pData.name || (isMe ? currentUserName : `Học viên ẩn danh (${uid.substring(0, 4)})`),
-            avatar_url: pData.avatar || '',
-            streak: pData.streak || 0,
-            total_words: userCounts[uid],
-            is_current: isMe
-          };
-        });
+        // 4. Gom danh sách User ID duy nhất
+        const allUserIds = Array.from(
+          new Set([...Object.keys(userCounts), ...Object.keys(profileMap), user.id])
+        );
 
-        // Tối ưu hóa Inline Sorting phía Client-side
-        if (rankingTab === 'streak') {
-          realLeaderboard.sort((a, b) => b.streak - a.streak);
-        } else {
-          realLeaderboard.sort((a, b) => b.total_words - a.total_words);
-        }
-        
+        // Tạo cấu trúc mảng xếp hạng và sắp xếp theo Số từ đã thuộc giảm dần
+        const realLeaderboard = allUserIds
+          .map((uid) => {
+            const isMe = uid === user.id;
+            const pData = profileMap[uid] || {};
+            
+            return {
+              id: uid,
+              display_name: pData.name || (isMe ? currentUserName : `Học viên ẩn danh (${uid.substring(0, 4)})`),
+              avatar_url: pData.avatar || '',
+              total_words: userCounts[uid] || 0,
+              is_current: isMe
+            };
+          })
+          .sort((a, b) => b.total_words - a.total_words);
+
         setLeaderboardData(realLeaderboard);
 
       } catch (err: any) {
-        console.error('Lỗi tính toán BXH thật:', err.message);
+        console.error('Lỗi tính toán BXH:', err.message);
       }
 
       setLoading(false);
     };
 
     checkUserAndFetchData();
-  }, [router, rankingTab]);
+  }, [router]);
 
   if (loading) {
     return (
@@ -127,7 +131,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <main className="min-h-screen w-full bg-gradient-to-br from-slate-50 to-slate-100 p-4 font-sans select-none flex flex-col justify-between">
+    <main className="min-h-screen w-full bg-gradient-to-br from-slate-50 to-slate-100 p-4 font-sans select-none flex flex-col justify-between relative pb-20">
       
       <div className="w-full max-w-md mx-auto space-y-5">
         
@@ -149,43 +153,31 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          {/* Nút cài đặt chuyển tiếp hướng luồng sang Route hệ thống độc lập */}
           <button 
             onClick={() => router.push('/settings')}
             className="p-2.5 rounded-xl border transition-all active:scale-95 bg-slate-50 border-slate-100 text-slate-500 hover:text-slate-800"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.43l-1.003.767a1.123 1.123 0 0 0-.417 1.03c.004.074.006.148.006.222 0 .074-.002.148-.006.222a1.123 1.123 0 0 0 .417 1.03l1.003.767a1.125 1.125 0 0 1 .26 1.43l-1.296 2.247a1.125 1.125 0 0 1-1.37.49l-1.216-.456a1.125 1.125 0 0 0-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281a1.125 1.125 0 0 0-.646-.87a6.52 6.52 0 0 1-.22-.127a1.125 1.125 0 0 0-1.074-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.43l1.004-.767a1.122 1.122 0 0 0 .416-1.03c-.004-.074-.006-.148-.006-.222s.002-.148.006-.222a1.122 1.122 0 0 0-.416-1.03l-1.004-.767a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.49l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128c.332-.183.582-.495.644-.869l.214-1.28Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.43l-1.003.767a1.123 1.123 0 0 0-.417 1.03c.004.074.006.148.006.222 0 .074-.002.148-.006.222a1.123 1.123 0 0 0 .417 1.03l1.003.767a1.125 1.125 0 0 1 .26 1.43l-1.296 2.247a1.125 1.125 0 0 1-1.37.49l-1.216-.456a1.125 1.125 0 0 0-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281a1.25 1.25 0 0 0-.646-.87a6.52 6.52 0 0 1-.22-.127a1.125 1.125 0 0 0-1.074-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.43l1.004-.767a1.122 1.122 0 0 0 .416-1.03c-.004-.074-.006-.148-.006-.222s.002-.148.006-.222a1.122 1.122 0 0 0-.416-1.03l-1.004-.767a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.49l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128c.332-.183.582-.495.644-.869l.214-1.28Z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
             </svg>
           </button>
         </div>
 
-        {/* 🏆 KHỐI 2: Bảng Xếp Hạng Đua Top DỮ LIỆU THẬT */}
+        {/* 🏆 KHỐI 2: Bảng Xếp Hạng Đua Top SỐ TỪ THUỘC */}
         <div className="w-full bg-white p-4 rounded-3xl shadow-sm border border-slate-100 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-1.5">
-              🏆 Bảng Xếp Hạng
+              🏆 Bảng Xếp Hạng Từ Vựng
             </h3>
-            <div className="flex p-0.5 bg-slate-100 rounded-lg text-[10px] font-bold">
-              <button 
-                onClick={() => setRankingTab('streak')}
-                className={`px-2.5 py-1 rounded-md transition-all ${rankingTab === 'streak' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-400'}`}
-              >
-                Chuỗi 🔥
-              </button>
-              <button 
-                onClick={() => setRankingTab('words')}
-                className={`px-2.5 py-1 rounded-md transition-all ${rankingTab === 'words' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-400'}`}
-              >
-                Số từ 💬
-              </button>
-            </div>
+            <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
+              Cập nhật Realtime
+            </span>
           </div>
 
           <div className="space-y-2">
             {leaderboardData.length === 0 ? (
-              <p className="text-center text-[11px] font-bold text-slate-400 py-2">Chưa có ai học từ nào ở đây cả hêt!</p>
+              <p className="text-center text-[11px] font-bold text-slate-400 py-2">Chưa có ai học từ nào ở đây cả hết!</p>
             ) : (
               leaderboardData.map((player, index) => (
                 <div 
@@ -209,11 +201,9 @@ export default function DashboardPage() {
                     <span className="truncate max-w-[140px]">{player.display_name}</span>
                   </div>
                   <div>
-                    {rankingTab === 'streak' ? (
-                      <span className="text-amber-600 flex items-center gap-0.5">🔥 {player.streak} ngày</span>
-                    ) : (
-                      <span className="text-indigo-600 flex items-center gap-0.5 font-mono">💬 {player.total_words} từ / 100</span>
-                    )}
+                    <span className="text-indigo-600 flex items-center gap-0.5 font-mono">
+                      💬 {player.total_words} {totalSystemCards > 0 ? `/ ${totalSystemCards}` : 'từ'}
+                    </span>
                   </div>
                 </div>
               ))
@@ -249,6 +239,22 @@ export default function DashboardPage() {
 
       </div>
 
+      {/* 💬 KHỐI NÚT CHAT CỐ ĐỊNH (Floating Action Button ở góc dưới bên phải) */}
+      <div className="fixed bottom-6 right-6 z-30 max-w-md mx-auto">
+        <button
+          onClick={() => router.push('/chat')}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-2xl active:scale-90 transition-all flex items-center justify-center border-2 border-white/20 group"
+          title="Trung tâm nhắn tin"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a.596.596 0 0 1-.722-.544v-.057c0-.288.09-.567.258-.797a6.32 6.32 0 0 0 1.22-3.141C4.81 15.01 4 13.58 4 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+          </svg>
+          <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out font-bold text-xs pl-0 group-hover:pl-2">
+            Nhắn tin
+          </span>
+        </button>
+      </div>
+
       {/* 📜 KHỐI 4: Chân trang tri ân Sensei Trang Dang */}
       <div className="w-full mt-8 pb-1 text-center flex flex-col items-center justify-center space-y-1 select-none pointer-events-none flex-shrink-0">
         <p className="text-[10px] font-medium text-slate-400 tracking-wide">
@@ -259,7 +265,7 @@ export default function DashboardPage() {
         </p>
       </div>
       
-      {/* 🚀 KHỐI 5: Bottom Sheet Xem Profile Chéo (Client Interaction 0-Byte Network) */}
+      {/* 🚀 KHỐI 5: Bottom Sheet Xem Profile Chéo (Có nút Nhắn tin) */}
       <AnimatePresence>
         {selectedProfile && (
           <>
@@ -300,23 +306,40 @@ export default function DashboardPage() {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-4 w-full justify-center pt-4">
-                  <div className="bg-amber-50 rounded-2xl p-4 flex-1 text-center border border-amber-100/50 shadow-sm">
-                    <p className="text-3xl font-black text-amber-500 mb-1">🔥 {selectedProfile.streak}</p>
-                    <p className="text-[10px] font-bold text-amber-600/70 uppercase tracking-wider">Chuỗi ngày</p>
-                  </div>
-                  <div className="bg-indigo-50 rounded-2xl p-4 flex-1 text-center border border-indigo-100/50 shadow-sm">
-                    <p className="text-3xl font-black text-indigo-500 mb-1 font-mono">{selectedProfile.total_words}</p>
-                    <p className="text-[10px] font-bold text-indigo-600/70 uppercase tracking-wider">Từ đã thuộc</p>
+                {/* Khối hiển thị tiến độ học duy nhất: Số từ đã thuộc */}
+                <div className="w-full pt-2">
+                  <div className="bg-indigo-50 rounded-2xl p-5 text-center border border-indigo-100/50 shadow-sm w-full">
+                    <p className="text-4xl font-black text-indigo-600 mb-1 font-mono">
+                      {selectedProfile.total_words} {totalSystemCards > 0 ? `/ ${totalSystemCards}` : ''}
+                    </p>
+                    <p className="text-xs font-bold text-indigo-600/70 uppercase tracking-wider">Tổng số từ đã thuộc</p>
                   </div>
                 </div>
-                
-                <button
-                  onClick={() => setSelectedProfile(null)}
-                  className="w-full mt-6 py-3.5 bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200"
-                >
-                  Đóng hồ sơ
-                </button>
+
+                {/* NÚT BẤM HÀNH ĐỘNG */}
+                <div className="w-full space-y-2 pt-2">
+                  {/* Nút nhắn tin chỉ hiển thị khi xem profile người khác */}
+                  {!selectedProfile.is_current && (
+                    <button
+                      onClick={() => {
+                        setSelectedProfile(null);
+                        router.push(`/chat?userId=${selectedProfile.id}`);
+                      }}
+                      className="w-full py-3.5 bg-indigo-600 text-white rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-indigo-700 shadow-md flex items-center justify-center gap-2"
+                    >
+                      <span>💬</span>
+                      <span>Nhắn tin với {selectedProfile.display_name}</span>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => setSelectedProfile(null)}
+                    className="w-full py-3.5 bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200"
+                  >
+                    Đóng hồ sơ
+                  </button>
+                </div>
+
               </div>
             </motion.div>
           </>
