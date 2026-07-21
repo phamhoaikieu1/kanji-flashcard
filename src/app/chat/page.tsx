@@ -85,7 +85,7 @@ function ChatContent() {
     initChat();
   }, [router, initialTargetUserId]);
 
-  // 2. 🌐 Điểm danh Online/Offline REALTIME qua Supabase Presence (RAM WebSocket)
+  // 2. 🌐 Điểm danh Online/Offline REALTIME qua Supabase Presence
   useEffect(() => {
     if (!currentUser) return;
 
@@ -99,7 +99,7 @@ function ChatContent() {
       .on('presence', { event: 'sync' }, () => {
         const state = presenceChannel.presenceState();
         const activeIds = Object.keys(state);
-        setOnlineUserIds(activeIds); // Cập nhật mảng ID các user đang thực sự mở App/Web
+        setOnlineUserIds(activeIds);
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
@@ -130,7 +130,6 @@ function ChatContent() {
 
     fetchMessages();
 
-    // Kênh nhận tin nhắn từ đối phương
     const channel = supabase
       .channel('realtime_messages')
       .on(
@@ -157,7 +156,7 @@ function ChatContent() {
     };
   }, [currentUser, activeTargetUser]);
 
-  // 4. Gửi tin nhắn (Hiển thị ngay lập tức - Optimistic UI)
+  // 4. Gửi tin nhắn (Optimistic UI)
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputContent.trim() || !activeTargetUser || !currentUser) return;
@@ -201,81 +200,85 @@ function ChatContent() {
   return (
     <div className="w-full max-w-md h-[100dvh] flex flex-col bg-white shadow-2xl relative overflow-hidden">
       
-      {/* 🔝 HEADER CỦA CỬA SỔ CHAT */}
-      <div className="w-full bg-white/80 backdrop-blur-md p-3 border-b border-slate-100 flex items-center justify-between z-20 flex-shrink-0">
-        <button
-          onClick={() => router.push('/dashboard')}
-          className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors text-xs font-bold"
-        >
-          ← Quay lại
-        </button>
+      {/* 📌 HEADER CỐ ĐỊNH HOÀN TOÀN Ở ĐỈNH (Dù vuốt hay mở bàn phím cũng không xê dịch) */}
+      <div className="sticky top-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-100 flex flex-col flex-shrink-0">
+        
+        {/* Hàng 1: Nút Quay lại & Thông tin User đang nhắn */}
+        <div className="p-3 flex items-center justify-between">
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors text-xs font-bold active:scale-95"
+          >
+            ← Quay lại
+          </button>
 
-        {activeTargetUser ? (
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center overflow-hidden text-xs relative">
-              {activeTargetUser.avatar_url ? (
-                <img src={activeTargetUser.avatar_url} alt="Ava" className="w-full h-full object-cover" />
-              ) : (
-                activeTargetUser.display_name.charAt(0).toUpperCase()
-              )}
+          {activeTargetUser ? (
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center overflow-hidden text-xs relative">
+                {activeTargetUser.avatar_url ? (
+                  <img src={activeTargetUser.avatar_url} alt="Ava" className="w-full h-full object-cover" />
+                ) : (
+                  activeTargetUser.display_name.charAt(0).toUpperCase()
+                )}
+              </div>
+              <div className="text-left">
+                <h3 className="text-xs font-bold text-slate-800">{activeTargetUser.display_name}</h3>
+                
+                {/* STATUS ONLINE */}
+                {isTargetOnline ? (
+                  <p className="text-[9px] text-emerald-500 font-bold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Đang hoạt động
+                  </p>
+                ) : (
+                  <p className="text-[9px] text-slate-400 font-medium">● Ngoại tuyến</p>
+                )}
+              </div>
             </div>
-            <div className="text-left">
-              <h3 className="text-xs font-bold text-slate-800">{activeTargetUser.display_name}</h3>
-              
-              {/* 🟢/⚪ STATUS ONLINE THẬT 100% */}
-              {isTargetOnline ? (
-                <p className="text-[9px] text-emerald-500 font-bold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Đang hoạt động
-                </p>
-              ) : (
-                <p className="text-[9px] text-slate-400 font-medium">● Ngoại tuyến</p>
-              )}
-            </div>
+          ) : (
+            <span className="text-xs font-bold text-slate-500">Tin nhắn học tập</span>
+          )}
+
+          <div className="w-8" />
+        </div>
+
+        {/* Hàng 2: Thanh danh sách User chọn chat nhanh */}
+        {conversations.length > 0 && (
+          <div className="w-full bg-slate-50/80 px-3 py-1.5 border-t border-slate-100 flex gap-2 overflow-x-auto no-scrollbar">
+            {conversations.map((user) => {
+              const isActive = activeTargetUser?.id === user.id;
+              const isUserOnline = onlineUserIds.includes(user.id);
+
+              return (
+                <button
+                  key={user.id}
+                  onClick={() => setActiveTargetUser(user)}
+                  className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all border relative ${
+                    isActive
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="w-4 h-4 rounded-full bg-slate-300 overflow-hidden text-[8px] flex items-center justify-center text-slate-700 relative">
+                    {user.avatar_url ? (
+                      <img src={user.avatar_url} alt="a" className="w-full h-full object-cover" />
+                    ) : (
+                      user.display_name.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  <span>{user.display_name}</span>
+                  {isUserOnline && (
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 border border-white" />
+                  )}
+                </button>
+              );
+            })}
           </div>
-        ) : (
-          <span className="text-xs font-bold text-slate-500">Tin nhắn học tập</span>
         )}
 
-        <div className="w-8" />
       </div>
 
-      {/* 👥 DANH SÁCH USER KHÁC ĐỂ CHỌN CHAT (Thanh ngang) */}
-      {conversations.length > 0 && (
-        <div className="w-full bg-slate-50/80 px-3 py-2 border-b border-slate-100 flex gap-2 overflow-x-auto flex-shrink-0 no-scrollbar">
-          {conversations.map((user) => {
-            const isActive = activeTargetUser?.id === user.id;
-            const isUserOnline = onlineUserIds.includes(user.id);
-
-            return (
-              <button
-                key={user.id}
-                onClick={() => setActiveTargetUser(user)}
-                className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all border relative ${
-                  isActive
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                <div className="w-4 h-4 rounded-full bg-slate-300 overflow-hidden text-[8px] flex items-center justify-center text-slate-700 relative">
-                  {user.avatar_url ? (
-                    <img src={user.avatar_url} alt="a" className="w-full h-full object-cover" />
-                  ) : (
-                    user.display_name.charAt(0).toUpperCase()
-                  )}
-                </div>
-                <span>{user.display_name}</span>
-                {/* Chấm xanh góc badge */}
-                {isUserOnline && (
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 border border-white" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* 💬 KHUNG HIỂN THỊ TIN NHẮN */}
-      <div className="flex-grow p-4 overflow-y-auto space-y-3 bg-slate-50/50">
+      {/* 💬 KHUNG CUỘN TIN NHẮN (Duy nhất vùng này có quyền cuộn) */}
+      <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50/50 min-h-0">
         {!activeTargetUser ? (
           <div className="h-full flex items-center justify-center text-slate-400 text-xs font-bold">
             Hãy chọn một học viên để bắt đầu cuộc trò chuyện!
@@ -314,10 +317,10 @@ function ChatContent() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* ✉️ KHUNG NHẬP VÀ GỬI TIN NHẮN */}
+      {/* ✉️ KHUNG NHẬP TIN NHẮN CỐ ĐỊNH Ở ĐÁY (Luôn nằm trên bàn phím ảo) */}
       <form
         onSubmit={handleSendMessage}
-        className="p-3 bg-white border-t border-slate-100 flex items-center space-x-2 flex-shrink-0"
+        className="sticky bottom-0 left-0 right-0 z-30 p-3 bg-white border-t border-slate-100 flex items-center space-x-2 flex-shrink-0"
       >
         <input
           type="text"

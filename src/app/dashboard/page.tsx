@@ -12,11 +12,12 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [displayName, setDisplayName] = useState('');
 
-  // Trạng thái quản lý BXH và Bottom Sheet xem chéo profile
+  // Trạng thái quản lý BXH, Profile và Modal Chọn Cấp Độ
   const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string>('');
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
   const [totalSystemCards, setTotalSystemCards] = useState<number>(0);
+  const [isLevelModalOpen, setIsLevelModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const checkUserAndFetchData = async () => {
@@ -33,7 +34,7 @@ export default function DashboardPage() {
       setDisplayName(currentUserName);
 
       try {
-        // 1. Đếm tổng số card_id hiện có trong bảng flashcards
+        // 1. Đếm tổng số card_id trong hệ thống
         const { count: totalCards } = await supabase
           .from('flashcards')
           .select('card_id', { count: 'exact', head: true });
@@ -42,7 +43,7 @@ export default function DashboardPage() {
           setTotalSystemCards(totalCards);
         }
 
-        // 2. Kéo dữ liệu thuộc bài từ bảng user_memorized_cards
+        // 2. Kéo dữ liệu thuộc bài
         const { data: memorizedData, error } = await supabase
           .from('user_memorized_cards')
           .select('user_id, card_id');
@@ -54,7 +55,7 @@ export default function DashboardPage() {
           userCounts[item.user_id] = (userCounts[item.user_id] || 0) + 1;
         });
 
-        // 3. Kéo dữ liệu người dùng từ bảng profiles để ánh xạ Avatar & Tên
+        // 3. Kéo dữ liệu profiles
         const { data: profileData } = await supabase.from('profiles').select('*');
         
         let nameCol = 'display_name';
@@ -76,17 +77,15 @@ export default function DashboardPage() {
           }
         });
 
-        // Đồng bộ hiển thị Avatar cá nhân lên Header
         if (profileMap[user.id]?.avatar) {
           setCurrentAvatarUrl(profileMap[user.id].avatar);
         }
 
-        // 4. Gom danh sách User ID duy nhất
+        // 4. Gom danh sách xếp hạng
         const allUserIds = Array.from(
           new Set([...Object.keys(userCounts), ...Object.keys(profileMap), user.id])
         );
 
-        // Tạo cấu trúc mảng xếp hạng và sắp xếp theo Số từ đã thuộc giảm dần
         const realLeaderboard = allUserIds
           .map((uid) => {
             const isMe = uid === user.id;
@@ -130,32 +129,47 @@ export default function DashboardPage() {
     { code: 'N1', label: 'Tiếng Nhật N1' },
   ];
 
+  // Hàm hỗ trợ mở Hồ sơ Cá nhân từ Header
+  const handleOpenMyProfile = () => {
+    const myWords = leaderboardData.find(p => p.is_current)?.total_words || 0;
+    setSelectedProfile({
+      id: user.id,
+      display_name: displayName,
+      avatar_url: currentAvatarUrl,
+      total_words: myWords,
+      is_current: true
+    });
+  };
+
   return (
-    <main className="min-h-screen w-full bg-gradient-to-br from-slate-50 to-slate-100 p-4 font-sans select-none flex flex-col justify-between relative pb-20">
+    <main className="h-[100dvh] w-full bg-gradient-to-br from-slate-50 to-slate-100 p-4 font-sans select-none flex flex-col justify-between overflow-hidden relative">
       
-      <div className="w-full max-w-md mx-auto space-y-5">
+      <div className="w-full max-w-md mx-auto space-y-4 flex-grow flex flex-col justify-start">
         
-        {/* 👤 KHỐI 1: Header thông tin người dùng */}
-        <div className="w-full bg-white p-4 rounded-3xl shadow-sm border border-slate-100 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-full bg-slate-900 flex items-center justify-center text-white font-black text-lg shadow-inner overflow-hidden border border-slate-200">
+        {/* 👤 KHỐI 1: Header thông tin người dùng (Bấm vào Avatar / Tên để mở Hồ sơ) */}
+        <div className="w-full bg-white p-3.5 rounded-3xl shadow-sm border border-slate-100 flex items-center justify-between flex-shrink-0">
+          <div 
+            onClick={handleOpenMyProfile}
+            className="flex items-center space-x-3 cursor-pointer group p-1 -m-1 rounded-2xl hover:bg-slate-50 transition-colors"
+          >
+            <div className="w-11 h-11 rounded-full bg-slate-900 flex items-center justify-center text-white font-black text-base shadow-inner overflow-hidden border border-slate-200 flex-shrink-0">
               {currentAvatarUrl ? (
                 <img src={currentAvatarUrl} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
                 displayName.charAt(0).toUpperCase()
               )}
             </div>
-            <div>
-              <h2 className="text-sm font-bold text-slate-800 flex items-center gap-1">
+            <div className="text-left">
+              <h2 className="text-xs font-bold text-slate-800 flex items-center gap-1 group-hover:text-indigo-600 transition-colors">
                 Chào {displayName}! 👋
               </h2>
-              <p className="text-xs text-slate-400 font-medium truncate max-w-[180px]">{user?.email}</p>
+              <p className="text-[11px] text-slate-400 font-medium truncate max-w-[170px]">{user?.email}</p>
             </div>
           </div>
           
           <button 
             onClick={() => router.push('/settings')}
-            className="p-2.5 rounded-xl border transition-all active:scale-95 bg-slate-50 border-slate-100 text-slate-500 hover:text-slate-800"
+            className="p-2.5 rounded-xl border transition-all active:scale-95 bg-slate-50 border-slate-100 text-slate-500 hover:text-slate-800 flex-shrink-0"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.43l-1.003.767a1.123 1.123 0 0 0-.417 1.03c.004.074.006.148.006.222 0 .074-.002.148-.006.222a1.123 1.123 0 0 0 .417 1.03l1.003.767a1.125 1.125 0 0 1 .26 1.43l-1.296 2.247a1.125 1.125 0 0 1-1.37.49l-1.216-.456a1.125 1.125 0 0 0-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281a1.25 1.25 0 0 0-.646-.87a6.52 6.52 0 0 1-.22-.127a1.125 1.125 0 0 0-1.074-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.43l1.004-.767a1.122 1.122 0 0 0 .416-1.03c-.004-.074-.006-.148-.006-.222s.002-.148.006-.222a1.122 1.122 0 0 0-.416-1.03l-1.004-.767a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.49l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128c.332-.183.582-.495.644-.869l.214-1.28Z" />
@@ -164,26 +178,26 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* 🏆 KHỐI 2: Bảng Xếp Hạng Đua Top SỐ TỪ THUỘC */}
-        <div className="w-full bg-white p-4 rounded-3xl shadow-sm border border-slate-100 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-1.5">
+        {/* 🏆 KHỐI 2: Bảng Xếp Hạng Đua Top SỐ TỪ THUỘC (Cuộn nội bộ vừa vặn) */}
+        <div className="w-full bg-white p-4 rounded-3xl shadow-sm border border-slate-100 flex flex-col max-h-[380px] flex-shrink-0">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-50 flex-shrink-0">
+            <h3 className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
               🏆 Bảng Xếp Hạng Từ Vựng
             </h3>
-            <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
+            <span className="text-[9px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100">
               Cập nhật Realtime
             </span>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 overflow-y-auto pt-2 pr-1 flex-grow no-scrollbar">
             {leaderboardData.length === 0 ? (
-              <p className="text-center text-[11px] font-bold text-slate-400 py-2">Chưa có ai học từ nào ở đây cả hết!</p>
+              <p className="text-center text-[11px] font-bold text-slate-400 py-4">Chưa có ai học từ nào ở đây cả hết!</p>
             ) : (
               leaderboardData.map((player, index) => (
                 <div 
                   key={player.id} 
                   onClick={() => setSelectedProfile(player)}
-                  className={`flex items-center justify-between p-2.5 rounded-xl border text-xs font-bold cursor-pointer active:scale-[0.98] transition-all hover:shadow-sm ${
+                  className={`flex items-center justify-between p-2.5 rounded-2xl border text-xs font-bold cursor-pointer active:scale-[0.98] transition-all hover:shadow-sm ${
                     player.is_current 
                       ? 'bg-indigo-50/50 border-indigo-100 text-indigo-900' 
                       : 'bg-slate-50/50 border-slate-100 text-slate-700 hover:bg-slate-50'
@@ -198,10 +212,10 @@ export default function DashboardPage() {
                         <span className="text-[10px] text-slate-400 font-bold">{player.display_name.charAt(0).toUpperCase()}</span>
                       )}
                     </div>
-                    <span className="truncate max-w-[140px]">{player.display_name}</span>
+                    <span className="truncate max-w-[130px]">{player.display_name}</span>
                   </div>
                   <div>
-                    <span className="text-indigo-600 flex items-center gap-0.5 font-mono">
+                    <span className="text-indigo-600 flex items-center gap-0.5 font-mono text-[11px]">
                       💬 {player.total_words} {totalSystemCards > 0 ? `/ ${totalSystemCards}` : 'từ'}
                     </span>
                   </div>
@@ -211,42 +225,35 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 🎯 KHỐI 3: Khu vực chọn Trình độ mục tiêu */}
-        <div className="text-center pt-2 pb-1">
-          <h2 className="text-xl font-black text-slate-800 tracking-tight">Chọn Trình Độ Mục Tiêu</h2>
-          <p className="text-xs text-slate-400 font-medium mt-1">Hôm nay bạn muốn rèn luyện Kanji cấp độ nào?</p>
-        </div>
-
-        <div className="w-full flex flex-col space-y-3">
-          {levels.map((lvl) => (
-            <button
-              key={lvl.code}
-              onClick={() => {
-                toast.success(`Đang mở kho thẻ bài ${lvl.code}...`);
-                router.push(`/flashcard?level=${lvl.code}`);
-              }}
-              className="w-full bg-white py-4 px-5 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.98] active:shadow-inner transition-all hover:border-slate-200 flex items-center justify-between text-left group"
-            >
-              <span className="text-sm font-extrabold text-slate-700 group-hover:text-slate-900 transition-colors">
-                {lvl.label}
-              </span>
-              <span className="text-slate-300 group-hover:text-slate-500 transition-colors font-bold">
-                →
-              </span>
-            </button>
-          ))}
+        {/* 🎯 KHỐI 3: NÚT GỘP CHỌN TRÌNH ĐỘ MỤC TIÊU */}
+        <div className="w-full pt-1 flex-shrink-0">
+          <button
+            onClick={() => setIsLevelModalOpen(true)}
+            className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 px-5 rounded-2xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-between group"
+          >
+            <div className="flex items-center space-x-3">
+              <span className="text-lg">🎯</span>
+              <div className="text-left">
+                <p className="text-xs font-extrabold">Chọn Trình Độ Mục Tiêu</p>
+                <p className="text-[10px] text-slate-300 font-medium">Bấm để chọn cấp độ từ N5 đến N1</p>
+              </div>
+            </div>
+            <span className="text-slate-300 group-hover:translate-x-1 transition-transform font-bold text-sm">
+              →
+            </span>
+          </button>
         </div>
 
       </div>
 
       {/* 💬 KHỐI NÚT CHAT CỐ ĐỊNH (Floating Action Button ở góc dưới bên phải) */}
-      <div className="fixed bottom-6 right-6 z-30 max-w-md mx-auto">
+      <div className="fixed bottom-12 right-5 z-30">
         <button
           onClick={() => router.push('/chat')}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-2xl active:scale-90 transition-all flex items-center justify-center border-2 border-white/20 group"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white p-3.5 rounded-full shadow-2xl active:scale-90 transition-all flex items-center justify-center border-2 border-white/20 group"
           title="Trung tâm nhắn tin"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a.596.596 0 0 1-.722-.544v-.057c0-.288.09-.567.258-.797a6.32 6.32 0 0 0 1.22-3.141C4.81 15.01 4 13.58 4 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
           </svg>
           <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out font-bold text-xs pl-0 group-hover:pl-2">
@@ -256,16 +263,73 @@ export default function DashboardPage() {
       </div>
 
       {/* 📜 KHỐI 4: Chân trang tri ân Sensei Trang Dang */}
-      <div className="w-full mt-8 pb-1 text-center flex flex-col items-center justify-center space-y-1 select-none pointer-events-none flex-shrink-0">
+      <div className="w-full text-center flex flex-col items-center justify-center space-y-0.5 select-none pointer-events-none flex-shrink-0 pt-2 pb-1">
         <p className="text-[10px] font-medium text-slate-400 tracking-wide">
           Phần mềm được thiết kế và dành tặng riêng cho Sensei Trang Dang
         </p>
-        <p className="text-[9px] font-sans text-slate-300 tracking-widest uppercase">
+        <p className="text-[8px] font-sans text-slate-300 tracking-widest uppercase">
           Trang Dang先生に感謝を込めて • 心を込めて開発された特別仕様ツール
         </p>
       </div>
+
+      {/* 🎯 POPUP BOTTOM SHEET: CHỌN TRÌNH ĐỘ (MỚI) */}
+      <AnimatePresence>
+        {isLevelModalOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsLevelModalOpen(false)}
+              className="fixed inset-0 bg-slate-900/40 z-40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-[2rem] p-6 shadow-2xl max-w-md mx-auto border-t border-slate-100"
+            >
+              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4" />
+              
+              <div className="text-center mb-5">
+                <h3 className="text-base font-black text-slate-800">🎯 Chọn Trình Độ Mục Tiêu</h3>
+                <p className="text-xs text-slate-400 font-medium mt-1">Hôm nay bạn muốn rèn luyện Kanji cấp độ nào?</p>
+              </div>
+
+              <div className="w-full flex flex-col space-y-2.5 mb-4">
+                {levels.map((lvl) => (
+                  <button
+                    key={lvl.code}
+                    onClick={() => {
+                      setIsLevelModalOpen(false);
+                      toast.success(`Đang mở kho thẻ bài ${lvl.code}...`);
+                      router.push(`/flashcard?level=${lvl.code}`);
+                    }}
+                    className="w-full bg-slate-50 hover:bg-indigo-50 hover:border-indigo-100 py-3.5 px-4 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.98] transition-all flex items-center justify-between text-left group"
+                  >
+                    <span className="text-xs font-bold text-slate-700 group-hover:text-indigo-600 transition-colors">
+                      {lvl.label}
+                    </span>
+                    <span className="text-slate-300 group-hover:text-indigo-500 transition-colors font-bold text-xs">
+                      Bắt đầu →
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setIsLevelModalOpen(false)}
+                className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200"
+              >
+                Đóng
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
       
-      {/* 🚀 KHỐI 5: Bottom Sheet Xem Profile Chéo (Có nút Nhắn tin) */}
+      {/* 🚀 BOTTOM SHEET: XEM PROFILE CHÉO (Có nút Nhắn tin) */}
       <AnimatePresence>
         {selectedProfile && (
           <>
@@ -286,46 +350,45 @@ export default function DashboardPage() {
               <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6" />
               
               <div className="flex flex-col items-center space-y-4">
-                <div className="w-24 h-24 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-lg relative">
+                <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-lg relative">
                   {selectedProfile.avatar_url ? (
                     <img src={selectedProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-3xl font-black text-slate-400">{selectedProfile.display_name.charAt(0).toUpperCase()}</span>
+                    <span className="text-2xl font-black text-slate-400">{selectedProfile.display_name.charAt(0).toUpperCase()}</span>
                   )}
                   {selectedProfile.is_current && (
-                    <div className="absolute bottom-0 right-0 bg-indigo-500 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center">
-                      <span className="text-[10px]">✨</span>
+                    <div className="absolute bottom-0 right-0 bg-indigo-500 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center">
+                      <span className="text-[9px]">✨</span>
                     </div>
                   )}
                 </div>
                 
                 <div className="text-center">
-                  <h3 className="text-xl font-black text-slate-800">{selectedProfile.display_name}</h3>
-                  <p className="text-xs text-slate-400 font-medium mt-1">
+                  <h3 className="text-lg font-black text-slate-800">{selectedProfile.display_name}</h3>
+                  <p className="text-xs text-slate-400 font-medium mt-0.5">
                     {selectedProfile.is_current ? 'Hồ sơ của bạn' : 'Học viên Kanji'}
                   </p>
                 </div>
 
-                {/* Khối hiển thị tiến độ học duy nhất: Số từ đã thuộc */}
-                <div className="w-full pt-2">
-                  <div className="bg-indigo-50 rounded-2xl p-5 text-center border border-indigo-100/50 shadow-sm w-full">
-                    <p className="text-4xl font-black text-indigo-600 mb-1 font-mono">
+                {/* Số từ đã thuộc */}
+                <div className="w-full pt-1">
+                  <div className="bg-indigo-50 rounded-2xl p-4 text-center border border-indigo-100/50 shadow-sm w-full">
+                    <p className="text-3xl font-black text-indigo-600 mb-0.5 font-mono">
                       {selectedProfile.total_words} {totalSystemCards > 0 ? `/ ${totalSystemCards}` : ''}
                     </p>
-                    <p className="text-xs font-bold text-indigo-600/70 uppercase tracking-wider">Tổng số từ đã thuộc</p>
+                    <p className="text-[10px] font-bold text-indigo-600/70 uppercase tracking-wider">Tổng số từ đã thuộc</p>
                   </div>
                 </div>
 
-                {/* NÚT BẤM HÀNH ĐỘNG */}
-                <div className="w-full space-y-2 pt-2">
-                  {/* Nút nhắn tin chỉ hiển thị khi xem profile người khác */}
+                {/* Nút hành động */}
+                <div className="w-full space-y-2 pt-1">
                   {!selectedProfile.is_current && (
                     <button
                       onClick={() => {
                         setSelectedProfile(null);
                         router.push(`/chat?userId=${selectedProfile.id}`);
                       }}
-                      className="w-full py-3.5 bg-indigo-600 text-white rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-indigo-700 shadow-md flex items-center justify-center gap-2"
+                      className="w-full py-3 bg-indigo-600 text-white rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-indigo-700 shadow-md flex items-center justify-center gap-2"
                     >
                       <span>💬</span>
                       <span>Nhắn tin với {selectedProfile.display_name}</span>
@@ -334,7 +397,7 @@ export default function DashboardPage() {
 
                   <button
                     onClick={() => setSelectedProfile(null)}
-                    className="w-full py-3.5 bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200"
+                    className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200"
                   >
                     Đóng hồ sơ
                   </button>
