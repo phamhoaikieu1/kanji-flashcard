@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed:vung": "node ../upload-n1.mjs",
+    "seed:grammar": "node ../upload-grammar-n1.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",
