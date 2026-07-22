@@ -12,12 +12,15 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [displayName, setDisplayName] = useState('');
 
-  // Trạng thái quản lý BXH, Profile và Modal Chọn Cấp Độ
+  // Trạng thái quản lý BXH, Profile và Modal
   const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string>('');
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
   const [totalSystemCards, setTotalSystemCards] = useState<number>(0);
+  
+  // Modals Chọn Cấp Độ
   const [isLevelModalOpen, setIsLevelModalOpen] = useState<boolean>(false);
+  const [isGrammarModalOpen, setIsGrammarModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const checkUserAndFetchData = async () => {
@@ -144,9 +147,9 @@ export default function DashboardPage() {
   return (
     <main className="h-[100dvh] w-full bg-gradient-to-br from-slate-50 to-slate-100 p-4 font-sans select-none flex flex-col justify-between overflow-hidden relative">
       
-      <div className="w-full max-w-md mx-auto space-y-4 flex-grow flex flex-col justify-start">
+      <div className="w-full max-w-md mx-auto space-y-3 flex-grow flex flex-col justify-start overflow-y-auto no-scrollbar">
         
-        {/* 👤 KHỐI 1: Header thông tin người dùng (Bấm vào Avatar / Tên để mở Hồ sơ) */}
+        {/* 👤 KHỐI 1: Header thông tin người dùng */}
         <div className="w-full bg-white p-3.5 rounded-3xl shadow-sm border border-slate-100 flex items-center justify-between flex-shrink-0">
           <div 
             onClick={handleOpenMyProfile}
@@ -178,9 +181,9 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* 🏆 KHỐI 2: Bảng Xếp Hạng Đua Top SỐ TỪ THUỘC (Cuộn nội bộ vừa vặn) */}
-        <div className="w-full bg-white p-4 rounded-3xl shadow-sm border border-slate-100 flex flex-col max-h-[380px] flex-shrink-0">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-50 flex-shrink-0">
+        {/* 🏆 KHỐI 2: Bảng Xếp Hạng Đua Top */}
+        <div className="w-full bg-white p-4 rounded-3xl shadow-sm border border-slate-100 flex flex-col max-h-[300px] flex-shrink-0">
+          <div className="flex items-center justify-between pb-2.5 border-b border-slate-50 flex-shrink-0">
             <h3 className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
               🏆 Bảng Xếp Hạng Từ Vựng
             </h3>
@@ -225,16 +228,16 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 🎯 KHỐI 3: NÚT GỘP CHỌN TRÌNH ĐỘ MỤC TIÊU */}
-        <div className="w-full pt-1 flex-shrink-0">
+        {/* 📚 KHỐI 3A: NÚT HỌC TỪ VỰNG NHIỀU CẤP ĐỘ */}
+        <div className="w-full flex-shrink-0">
           <button
             onClick={() => setIsLevelModalOpen(true)}
-            className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 px-5 rounded-2xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-between group"
+            className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 px-4 rounded-2xl shadow-md active:scale-[0.98] transition-all flex items-center justify-between group"
           >
             <div className="flex items-center space-x-3">
-              <span className="text-lg">🎯</span>
+              <span className="text-lg">📚</span>
               <div className="text-left">
-                <p className="text-xs font-extrabold">Chọn Trình Độ Mục Tiêu</p>
+                <p className="text-xs font-extrabold">Học Từ Vựng Nhiều Cấp Độ</p>
                 <p className="text-[10px] text-slate-300 font-medium">Bấm để chọn cấp độ từ N5 đến N1</p>
               </div>
             </div>
@@ -244,9 +247,28 @@ export default function DashboardPage() {
           </button>
         </div>
 
+        {/* 📖 KHỐI 3B: NÚT HỌC NGỮ PHÁP NHIỀU CẤP ĐỘ */}
+        <div className="w-full flex-shrink-0">
+          <button
+            onClick={() => setIsGrammarModalOpen(true)}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 px-4 rounded-2xl shadow-md active:scale-[0.98] transition-all flex items-center justify-between group"
+          >
+            <div className="flex items-center space-x-3">
+              <span className="text-lg">📖</span>
+              <div className="text-left">
+                <p className="text-xs font-extrabold">Học Ngữ Pháp Nhiều Cấp Độ</p>
+                <p className="text-[10px] text-indigo-100 font-medium">Bấm để chọn cấp độ từ N5 đến N1</p>
+              </div>
+            </div>
+            <span className="text-indigo-200 group-hover:translate-x-1 transition-transform font-bold text-sm">
+              →
+            </span>
+          </button>
+        </div>
+
       </div>
 
-      {/* 💬 KHỐI NÚT CHAT CỐ ĐỊNH (Floating Action Button ở góc dưới bên phải) */}
+      {/* 💬 KHỐI NÚT CHAT CỐ ĐỊNH */}
       <div className="fixed bottom-12 right-5 z-30">
         <button
           onClick={() => router.push('/chat')}
@@ -272,7 +294,7 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* 🎯 POPUP BOTTOM SHEET: CHỌN TRÌNH ĐỘ (MỚI) */}
+      {/* 📚 POPUP 1: CHỌN TRÌNH ĐỘ TỪ VỰNG */}
       <AnimatePresence>
         {isLevelModalOpen && (
           <>
@@ -293,7 +315,7 @@ export default function DashboardPage() {
               <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4" />
               
               <div className="text-center mb-5">
-                <h3 className="text-base font-black text-slate-800">🎯 Chọn Trình Độ Mục Tiêu</h3>
+                <h3 className="text-base font-black text-slate-800">📚 Chọn Cấp Độ Từ Vựng</h3>
                 <p className="text-xs text-slate-400 font-medium mt-1">Hôm nay bạn muốn rèn luyện Kanji cấp độ nào?</p>
               </div>
 
@@ -303,7 +325,7 @@ export default function DashboardPage() {
                     key={lvl.code}
                     onClick={() => {
                       setIsLevelModalOpen(false);
-                      toast.success(`Đang mở kho thẻ bài ${lvl.code}...`);
+                      toast.success(`Đang mở từ vựng ${lvl.code}...`);
                       router.push(`/flashcard?level=${lvl.code}`);
                     }}
                     className="w-full bg-slate-50 hover:bg-indigo-50 hover:border-indigo-100 py-3.5 px-4 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.98] transition-all flex items-center justify-between text-left group"
@@ -328,8 +350,65 @@ export default function DashboardPage() {
           </>
         )}
       </AnimatePresence>
-      
-      {/* 🚀 BOTTOM SHEET: XEM PROFILE CHÉO (Có nút Nhắn tin) */}
+
+      {/* 📖 POPUP 2: CHỌN TRÌNH ĐỘ NGỮ PHÁP */}
+      <AnimatePresence>
+        {isGrammarModalOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsGrammarModalOpen(false)}
+              className="fixed inset-0 bg-slate-900/40 z-40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-[2rem] p-6 shadow-2xl max-w-md mx-auto border-t border-slate-100"
+            >
+              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4" />
+              
+              <div className="text-center mb-5">
+                <h3 className="text-base font-black text-slate-800">📖 Chọn Cấp Độ Ngữ Pháp</h3>
+                <p className="text-xs text-slate-400 font-medium mt-1">Hôm nay bạn muốn học ngữ pháp cấp độ nào?</p>
+              </div>
+
+              <div className="w-full flex flex-col space-y-2.5 mb-4">
+                {levels.map((lvl) => (
+                  <button
+                    key={lvl.code}
+                    onClick={() => {
+                      setIsGrammarModalOpen(false);
+                      toast.success(`Đang mở ngữ pháp ${lvl.code}...`);
+                      router.push(`/grammar?level=${lvl.code}`);
+                    }}
+                    className="w-full bg-slate-50 hover:bg-indigo-50 hover:border-indigo-100 py-3.5 px-4 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.98] transition-all flex items-center justify-between text-left group"
+                  >
+                    <span className="text-xs font-bold text-slate-700 group-hover:text-indigo-600 transition-colors">
+                      {lvl.label}
+                    </span>
+                    <span className="text-slate-300 group-hover:text-indigo-500 transition-colors font-bold text-xs">
+                      Học ngay →
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setIsGrammarModalOpen(false)}
+                className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200"
+              >
+                Đóng
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* 🚀 BOTTOM SHEET: XEM PROFILE CHÉO */}
       <AnimatePresence>
         {selectedProfile && (
           <>
