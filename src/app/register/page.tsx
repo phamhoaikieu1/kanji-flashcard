@@ -1,44 +1,53 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/utils/supabase';
 import { toast } from 'react-hot-toast';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  
+  // Trạng thái đếm ngược Cooldown (chống spam)
+  const [cooldown, setCooldown] = useState(0);
 
-  // Thêm chữ async ở đây để kích hoạt tính năng chờ Server phản hồi
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (name && email && password) {
-      // Gọi lệnh tạo tài khoản lên thẳng Server Supabase thật
-      const { data, error } = await supabase.auth.signUp({
-        email: email,
-        password: password,
-        options: {
-          data: {
-            full_name: name, // Lưu tên của bạn vào bộ nhớ của user trên Server
-          },
-        },
-      });
-
-      // Nếu Server trả về lỗi (ví dụ: email sai định dạng, mật khẩu quá ngắn...)
-      if (error) {
-        toast.error(`Lỗi đăng ký từ Server: ${error.message}`);
-        return;
-      }
-
-      toast.success('Đăng ký tài khoản thành công trên Server thật! Tiến về màn hình Đăng nhập.');
-      router.push('/login');
-    } else {
-      toast.error('Vui lòng điền đầy đủ thông tin!');
+  // Xử lý đếm ngược theo thời gian thực
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+      return () => clearTimeout(timer);
     }
+  }, [cooldown]);
+
+  const handleRegisterNotice = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Nếu đang trong thời gian chờ cooldown thì chặn ngay
+    if (cooldown > 0) return;
+
+    // 1. Dọn dẹp tất cả thông báo cũ (tránh dồn clone đè màn hình)
+    toast.dismiss();
+
+    // 2. Bật duy nhất 1 thông báo chuẩn
+    toast(
+      '🔒 Đăng ký tự do đã đóng!\nHãy liên hệ với Sensei Trang Dang để nhận tài khoản nhé.',
+      {
+        duration: 4000,
+        icon: '💌',
+        id: 'register-notice-toast', // ID cố định giúp đè Toast cũ
+        style: {
+          borderRadius: '1rem',
+          background: '#0f172a',
+          color: '#fff',
+          fontSize: '13px',
+          fontWeight: 'bold',
+          textAlign: 'center',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+        },
+      }
+    );
+
+    // 3. Kích hoạt đếm ngược 8 giây chống bấm liên tục
+    setCooldown(8);
   };
 
   return (
@@ -47,21 +56,31 @@ export default function RegisterPage() {
         
         {/* Tiêu đề */}
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Tạo tài khoản</h1>
-          <p className="text-sm text-slate-400">Bắt đầu hành trình chinh phục Kanji</p>
+          <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Cấp Tài Khoản</h1>
+          <p className="text-sm text-slate-400">Hệ thống quản lý học viên nội bộ</p>
         </div>
 
-        {/* Form nhập liệu */}
-        <form onSubmit={handleRegister} className="space-y-4">
+        {/* Khung thông báo Khóa Đăng Ký */}
+        <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-4 text-center space-y-1.5">
+          <div className="flex items-center justify-center gap-1.5 text-amber-800 font-extrabold text-xs">
+            <span className="text-base">🔒</span>
+            <span>TÍNH NĂNG ĐĂNG KÝ TỰ DO ĐÃ ĐÓNG</span>
+          </div>
+          <p className="text-[11px] text-amber-700/90 font-medium leading-relaxed">
+            Hệ thống hiện chỉ nhận cấp tài khoản thủ công. Vui lòng liên hệ trực tiếp với{' '}
+            <span className="font-extrabold text-amber-900 underline">Sensei Trang Dang</span> để nhận thông tin đăng nhập!
+          </p>
+        </div>
+
+        {/* Form hướng dẫn - 100% Client Logic, Không gọi Supabase */}
+        <form onSubmit={handleRegisterNotice} className="space-y-4 opacity-75">
           <div>
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Tên của bạn</label>
             <input 
               type="text" 
-              value={name}
-              onChange={(e) => setName(e.target.value)}
               placeholder="Nguyễn Văn A"
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-800 transition-all text-sm"
-              required
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-800 focus:outline-none text-sm bg-slate-50/50 cursor-not-allowed"
+              readOnly
             />
           </div>
 
@@ -69,55 +88,51 @@ export default function RegisterPage() {
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Email</label>
             <input 
               type="email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               placeholder="name@example.com"
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-800 transition-all text-sm"
-              required
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-800 focus:outline-none text-sm bg-slate-50/50 cursor-not-allowed"
+              readOnly
             />
           </div>
 
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Mật khẩu</label>
-            <div className="relative">
-                <input 
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Tối thiểu 6 ký tự"
-                className="w-full px-4 py-3 pr-12 rounded-xl border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-800 transition-all text-sm"
-                required
-                />
-                <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-lg opacity-60 hover:opacity-100 transition-opacity p-1"
-                >
-                {showPassword ? '👁️' : '🙈'}
-                </button>
-            </div>
-          </div>
-
-          {/* Nút đăng ký */}
+          {/* Nút bấm có trạng thái Cooldown thông minh */}
           <button
             type="submit"
-            className="w-full py-3.5 bg-slate-900 text-white font-bold rounded-xl shadow-md active:scale-98 transition-all hover:bg-slate-800 text-sm tracking-wide"
+            disabled={cooldown > 0}
+            className={`w-full py-3.5 font-bold rounded-xl shadow-md transition-all text-sm tracking-wide flex items-center justify-center gap-2 ${
+              cooldown > 0
+                ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                : 'bg-slate-900 text-white hover:bg-slate-800 active:scale-98'
+            }`}
           >
-            Đăng ký tài khoản
+            {cooldown > 0 ? (
+              <span>⏳ Vui lòng chờ {cooldown}s...</span>
+            ) : (
+              <>
+                <span>💬</span>
+                <span>Yêu cầu cấp tài khoản</span>
+              </>
+            )}
           </button>
         </form>
 
-        {/* Quay lại đăng nhập */}
+        {/* Nút quay lại đăng nhập */}
         <div className="text-center text-sm text-slate-500 pt-2 border-t border-slate-100">
-          Đã có tài khoản rồi?{' '}
+          Đã có tài khoản được cấp?{' '}
           <button 
             onClick={() => router.push('/login')}
-            className="font-bold text-slate-800 hover:underline"
+            className="font-bold text-indigo-600 hover:underline"
           >
-            Đăng nhập ngay
+            Đăng nhập ngay →
           </button>
         </div>
 
+      </div>
+
+      {/* Footer tri ân */}
+      <div className="text-center mt-6 select-none pointer-events-none">
+        <p className="text-[10px] font-medium text-slate-400 tracking-wide">
+          Phần mềm được thiết kế và dành tặng riêng cho Sensei Trang Dang
+        </p>
       </div>
     </main>
   );

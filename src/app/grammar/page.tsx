@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGrammar } from './components/useGrammar';
 import { GrammarCard } from './components/GrammarCard';
-import { GrammarControls } from './components/GrammarControls';
+import { FlashcardControls } from '../flashcard/components/FlashcardControls';
 import { GrammarModals } from './components/GrammarModals';
 
 function GrammarContent() {
@@ -13,7 +13,7 @@ function GrammarContent() {
   if (g.loadingData) {
     return (
       <div className="text-center">
-        <p className="text-slate-500 font-medium animate-pulse">Đang đồng bộ kho ngữ pháp...</p>
+        <p className="text-indigo-600 font-bold animate-pulse">Đang đồng bộ kho ngữ pháp...</p>
       </div>
     );
   }
@@ -40,7 +40,7 @@ function GrammarContent() {
           <span>←</span> <span>Chọn trình độ khác</span>
         </button>
 
-        <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest bg-white px-3.5 py-1 rounded-full shadow-sm border border-slate-100 mt-5 z-20">
+        <div className="text-[11px] font-bold text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3.5 py-1 rounded-full shadow-sm border border-indigo-100 mt-5 z-20">
           NGỮ PHÁP {g.selectedLevel} • THẺ {g.displayCards.length > 0 ? g.currentIndex + 1 : 0} / {g.displayCards.length}
         </div>
       </div>
@@ -83,8 +83,8 @@ function GrammarContent() {
         onToggleSave={g.handleToggleSave}
       />
 
-      {/* 🎛️ TẦNG 4: Bộ Lọc & Điều Hướng */}
-      <GrammarControls
+      {/* 🎛️ TẦNG 4: Bộ Lọc & Điều Hướng (Dùng chung component từ folder flashcard) */}
+      <FlashcardControls
         selectedLessonsCount={g.selectedLessons.length}
         availableLessonsCount={g.availableLessons.length}
         filterMode={g.filterMode}
@@ -127,8 +127,8 @@ function GrammarContent() {
 
 export default function GrammarPage() {
   return (
-    <main className="flex h-[100dvh] w-full flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-2 font-sans select-none overflow-hidden overscroll-none">
-      <Suspense fallback={<p className="text-slate-500 font-medium">Đang tải kho thẻ bài...</p>}>
+    <main className="flex h-[100dvh] w-full flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-indigo-50/30 p-2 font-sans select-none overflow-hidden overscroll-none">
+      <Suspense fallback={<p className="text-indigo-600 font-bold">Đang tải kho thẻ bài ngữ pháp...</p>}>
         <GrammarContent />
       </Suspense>
     </main>

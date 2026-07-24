@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -38,7 +40,7 @@ export function useGrammar() {
     setTimeout(() => setInlineAlert(null), 2500);
   };
 
-  // Khôi phục LocalStorage
+  // 1. Khôi phục trạng thái từ LocalStorage
   useEffect(() => {
     const savedState = localStorage.getItem(`grammar_state_${selectedLevel}`);
     if (savedState) {
@@ -59,15 +61,16 @@ export function useGrammar() {
     }
   }, [selectedLevel]);
 
-  // Fetch dữ liệu chuẩn xác từ Supabase
+  // 2. Fetch dữ liệu LỌC CHUẨN XÁC THEO LEVEL từ Supabase
   useEffect(() => {
     const fetchCardsAndProgress = async () => {
       setLoadingData(true);
       try {
-        // Query trực tiếp lấy dữ liệu
+        // Lọc trực tiếp cấp độ ở Supabase bằng .eq('level', selectedLevel)
         const { data, error } = await supabase
           .from('grammar_cards')
           .select('*')
+          .eq('level', selectedLevel)
           .order('card_id', { ascending: true });
 
         if (error) {
@@ -78,16 +81,10 @@ export function useGrammar() {
         }
 
         if (data && data.length > 0) {
-          // Chuẩn hóa Level (loại bỏ khoảng trắng)
-          const targetLevel = selectedLevel.trim().toUpperCase();
-          const filtered = data.filter(
-            (card) => card.level && card.level.toString().trim().toUpperCase() === targetLevel
-          );
-
-          // Trích xuất số bài học từ card_id (VD: N1_G01_001 -> Bài 1)
-          const formattedCards = (filtered.length > 0 ? filtered : data).map((card) => {
-            const match = card.card_id?.match(/_G(\d+)_/);
-            const lessonNum = match ? parseInt(match[1], 10) : 1;
+          // Trích xuất số bài học từ card_id (Ví dụ: N1_G01_001 -> Lesson 1)
+          const formattedCards = data.map((card) => {
+            const match = card.card_id?.match(/_G(\d+)_/i);
+            const lessonNum = match ? parseInt(match[1], 10) : (card.lesson || 1);
             return { ...card, lesson: lessonNum };
           });
 
@@ -98,21 +95,24 @@ export function useGrammar() {
           setAvailableLessons(lessons);
 
           const savedState = localStorage.getItem(`grammar_state_${selectedLevel}`);
-          if (!savedState || selectedLessons.length === 0) {
+          if (!savedState) {
             setSelectedLessons(lessons);
           }
 
           triggerInlineAlert('success', `🎯 Trình độ ${selectedLevel}: Đã nạp ${formattedCards.length} mẫu ngữ pháp!`);
         } else {
-          console.warn('⚠️ Supabase trả về mảng rỗng (Kiểm tra RLS Policy trên Supabase)!');
+          // Trường hợp cấp độ chưa có dữ liệu -> Đưa về mảng rỗng chuẩn xác
+          setAllCards([]);
+          setAvailableLessons([]);
+          setSelectedLessons([]);
         }
 
         // Tải User Progress
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const [memorizedRes, savedRes] = await Promise.all([
-            supabase.from('user_memorized_grammar').select('card_id').eq('user_id', user.id),
-            supabase.from('user_saved_grammar').select('card_id').eq('user_id', user.id)
+            supabase.from('user_memorized_cards').select('card_id').eq('user_id', user.id),
+            supabase.from('user_saved_cards').select('card_id').eq('user_id', user.id)
           ]);
 
           if (memorizedRes.data) setMemorizedIds(memorizedRes.data.map((item: any) => item.card_id));
@@ -201,7 +201,7 @@ export function useGrammar() {
     const isAlreadyMemorized = memorizedIds.includes(cardId);
     if (isAlreadyMemorized) {
       const { error } = await supabase
-        .from('user_memorized_grammar')
+        .from('user_memorized_cards')
         .delete()
         .eq('user_id', user.id)
         .eq('card_id', cardId);
@@ -214,7 +214,7 @@ export function useGrammar() {
       }
     } else {
       const { error } = await supabase
-        .from('user_memorized_grammar')
+        .from('user_memorized_cards')
         .insert([{ user_id: user.id, card_id: cardId }]);
 
       if (error) triggerInlineAlert('error', `Lỗi: ${error.message}`);
@@ -235,7 +235,7 @@ export function useGrammar() {
     const isAlreadySaved = savedIds.includes(cardId);
     if (isAlreadySaved) {
       const { error } = await supabase
-        .from('user_saved_grammar')
+        .from('user_saved_cards')
         .delete()
         .eq('user_id', user.id)
         .eq('card_id', cardId);
@@ -248,7 +248,7 @@ export function useGrammar() {
       }
     } else {
       const { error } = await supabase
-        .from('user_saved_grammar')
+        .from('user_saved_cards')
         .insert([{ user_id: user.id, card_id: cardId }]);
 
       if (error) triggerInlineAlert('error', `Lỗi: ${error.message}`);
