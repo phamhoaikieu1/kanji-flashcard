@@ -15,7 +15,10 @@ const supabaseAdmin = createClient(
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { action, email, password, displayName, userId, newRole, newPassword, requestingUserId } = body;
+    const { 
+      action, email, password, displayName, userId, newRole, newPassword, requestingUserId,
+      isLockedSettings, lockedCourses, banDuration
+    } = body;
 
     // 1. Kiểm tra quyền Admin/Owner
     const { data: requestingProfile, error: profileErr } = await supabaseAdmin
@@ -30,18 +33,55 @@ export async function POST(req: Request) {
 
     const requestingRole = requestingProfile.role;
 
-    // ------------------- ACTION 0: LẤY TẤT CẢ HỌC VIÊN (SERVER-SIDE) -------------------
+    // ------------------- ACTION 0: LẤY TẤT CẢ HỌC VIÊN -------------------
     if (action === 'GET_USERS') {
-      const { data: profiles, error: fetchErr } = await supabaseAdmin
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data: authUsersData, error: authErr } = await supabaseAdmin.auth.admin.listUsers();
 
-      if (fetchErr) {
-        return NextResponse.json({ error: fetchErr.message }, { status: 400 });
+      if (authErr) {
+        return NextResponse.json({ error: `Lỗi tải danh sách Auth: ${authErr.message}` }, { status: 400 });
       }
 
-      return NextResponse.json({ success: true, users: profiles || [] });
+      const { data: profiles } = await supabaseAdmin.from('profiles').select('*');
+      const profileMap: { [key: string]: any } = {};
+      profiles?.forEach((p) => { profileMap[p.id] = p; });
+
+      const mergedUsers = await Promise.all(
+        authUsersData.users.map(async (authUser) => {
+          let p = profileMap[authUser.id];
+
+          if (!p) {
+            const nameToUse = authUser.user_metadata?.full_name || authUser.user_metadata?.display_name || authUser.email?.split('@')[0] || 'Học viên';
+            const { data: createdProfile } = await supabaseAdmin
+              .from('profiles')
+              .upsert({
+                id: authUser.id,
+                email: authUser.email,
+                full_name: nameToUse,
+                role: 'user',
+              }, { onConflict: 'id' })
+              .select()
+              .single();
+
+            p = createdProfile || { role: 'user', full_name: nameToUse };
+          }
+
+          return {
+            id: authUser.id,
+            email: authUser.email,
+            full_name: p?.full_name || p?.display_name || authUser.user_metadata?.full_name || 'Học viên',
+            role: p?.role || 'user',
+            avatar_url: p?.avatar_url || '',
+            created_at: authUser.created_at,
+            is_locked_settings: p?.is_locked_settings || false,
+            locked_courses: p?.locked_courses || [],
+            ban_until: p?.ban_until || null,
+          };
+        })
+      );
+
+      mergedUsers.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      return NextResponse.json({ success: true, users: mergedUsers });
     }
 
     // ------------------- ACTION 1: TẠO TÀI KHOẢN MỚI -------------------
@@ -62,16 +102,12 @@ export async function POST(req: Request) {
       }
 
       if (newUser.user) {
-        const { error: profileErr } = await supabaseAdmin.from('profiles').upsert({
+        await supabaseAdmin.from('profiles').upsert({
           id: newUser.user.id,
           full_name: displayName,
           email: email,
           role: 'user',
         }, { onConflict: 'id' });
-
-        if (profileErr) {
-          return NextResponse.json({ error: `Tạo Auth xong nhưng lỗi chèn Profile: ${profileErr.message}` }, { status: 400 });
-        }
       }
 
       return NextResponse.json({ success: true, user: newUser.user });
@@ -94,7 +130,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true });
     }
 
-    // ------------------- ACTION 3: CẬP NHẬT QUA VAI TRÒ -------------------
+    // ------------------- ACTION 3: CẬP NHẬT VAI TRÒ (ROLE) -------------------
     if (action === 'UPDATE_ROLE') {
       if (!userId || !newRole) {
         return NextResponse.json({ error: 'Thiếu thông tin phân quyền!' }, { status: 400 });
@@ -119,12 +155,77 @@ export async function POST(req: Request) {
 
       const { error: roleErr } = await supabaseAdmin
         .from('profiles')
-        .update({ role: newRole })
-        .eq('id', userId);
+        .upsert({ id: userId, role: newRole }, { onConflict: 'id' });
 
       if (roleErr) {
         return NextResponse.json({ error: roleErr.message }, { status: 400 });
       }
+
+      return NextResponse.json({ success: true });
+    }
+
+    // ------------------- ACTION 4: CẬP NHẬT TRẠNG THÁI KHÓA -------------------
+    if (action === 'UPDATE_LOCK_STATUS') {
+      if (!userId) {
+        return NextResponse.json({ error: 'Thiếu ID người dùng!' }, { status: 400 });
+      }
+
+      let banUntilDate: Date | null = null;
+      if (banDuration === '1h') {
+        banUntilDate = new Date(Date.now() + 1 * 60 * 60 * 1000);
+      } else if (banDuration === '4h') {
+        banUntilDate = new Date(Date.now() + 4 * 60 * 60 * 1000);
+      } else if (banDuration === '8am') {
+        const tomorrow8AM = new Date();
+        tomorrow8AM.setDate(tomorrow8AM.getDate() + 1);
+        tomorrow8AM.setHours(8, 0, 0, 0);
+        banUntilDate = tomorrow8AM;
+      } else if (banDuration === 'forever') {
+        // Sử dụng mốc năm 2099 để đánh dấu khóa vĩnh viễn cho tới khi mở lại
+        banUntilDate = new Date('2099-12-31T23:59:59.000Z');
+      } else if (banDuration === 'unlock') {
+        banUntilDate = null;
+      }
+
+      const { error: updateErr } = await supabaseAdmin.from('profiles').update({
+        is_locked_settings: isLockedSettings ?? false,
+        locked_courses: lockedCourses || [],
+        ban_until: banUntilDate ? banUntilDate.toISOString() : null,
+      }).eq('id', userId);
+
+      if (updateErr) {
+        return NextResponse.json({ error: updateErr.message }, { status: 400 });
+      }
+
+      return NextResponse.json({ success: true });
+    }
+
+    // ------------------- ACTION 5: XÓA TÀI KHOẢN -------------------
+    if (action === 'DELETE_USER') {
+      if (!userId) {
+        return NextResponse.json({ error: 'Thiếu ID người dùng!' }, { status: 400 });
+      }
+
+      const { data: targetProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+
+      const targetRole = targetProfile?.role || 'user';
+
+      if (targetRole === 'admin' || targetRole === 'owner') {
+        return NextResponse.json({ error: 'Tài khoản Admin/Owner không thể xóa! Vui lòng hạ cấp tài khoản về Học viên thường trước khi xóa.' }, { status: 400 });
+      }
+
+      // Xóa trong kho Auth gốc
+      const { error: deleteAuthErr } = await supabaseAdmin.auth.admin.deleteUser(userId);
+      if (deleteAuthErr) {
+        return NextResponse.json({ error: deleteAuthErr.message }, { status: 400 });
+      }
+
+      // Đảm bảo dọn sạch bảng public.profiles
+      await supabaseAdmin.from('profiles').delete().eq('id', userId);
 
       return NextResponse.json({ success: true });
     }

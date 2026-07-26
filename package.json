@@ -9,7 +9,8 @@
     "lint": "eslint",
     "seed:vung": "node ../upload-n1.mjs",
     "seed:grammar": "node ../upload-grammar-n1.mjs",
-    "seed:hsk": "node ../upload-hsk.mjs"
+    "seed:hsk": "node ../upload-hsk.mjs",
+    "seed:basic": "node ../upload-basic-chinese.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",

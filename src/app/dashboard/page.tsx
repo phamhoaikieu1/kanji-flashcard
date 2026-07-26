@@ -43,6 +43,7 @@ export default function DashboardPage() {
         <LearningButtons
           onOpenVocab={() => d.setIsLevelModalOpen(true)}
           onOpenGrammar={() => d.setIsGrammarModalOpen(true)}
+          onOpenBasicChinese={() => d.setIsBasicChineseModalOpen(true)}
           onOpenHsk={() => d.setIsHskModalOpen(true)}
         />
       </div>
@@ -73,17 +74,20 @@ export default function DashboardPage() {
         </p>
       </div>
 
-            {/* 📜 MODALS POPUP */}
+      {/* 📜 MODALS POPUP */}
       <DashboardModals
         router={d.router}
         levels={d.levels}
         hskLevels={d.hskLevels}
+        basicChineseLevels={d.basicChineseLevels}
         isLevelModalOpen={d.isLevelModalOpen}
         setIsLevelModalOpen={d.setIsLevelModalOpen}
         isGrammarModalOpen={d.isGrammarModalOpen}
         setIsGrammarModalOpen={d.setIsGrammarModalOpen}
         isHskModalOpen={d.isHskModalOpen}
         setIsHskModalOpen={d.setIsHskModalOpen}
+        isBasicChineseModalOpen={d.isBasicChineseModalOpen}
+        setIsBasicChineseModalOpen={d.setIsBasicChineseModalOpen}
         selectedProfile={d.selectedProfile}
         setSelectedProfile={d.setSelectedProfile}
         totalSystemCards={d.totalSystemCards}

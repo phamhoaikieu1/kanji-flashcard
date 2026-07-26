@@ -22,24 +22,28 @@ export function useDashboard() {
   const [isLevelModalOpen, setIsLevelModalOpen] = useState<boolean>(false);
   const [isGrammarModalOpen, setIsGrammarModalOpen] = useState<boolean>(false);
   const [isHskModalOpen, setIsHskModalOpen] = useState<boolean>(false);
+  const [isBasicChineseModalOpen, setIsBasicChineseModalOpen] = useState<boolean>(false);
 
   // Hàm fetch dữ liệu độc lập không gây loop
   const fetchDashboardData = useCallback(async (currentUser: any) => {
     try {
-      // 1. Đếm TỔNG SỐ THẺ hệ thống
-      const [{ count: jpCards }, { count: grammarCards }, { count: hskCards }] = await Promise.all([
+      // 1. Đếm TỔNG SỐ THẺ hệ thống (Bao gồm cả Tiếng Trung Cơ Bản)
+      const [{ count: jpCards }, { count: grammarCards }, { count: hskCards }, { count: basicChineseCards }] = await Promise.all([
         supabase.from('flashcards').select('card_id', { count: 'exact', head: true }),
         supabase.from('grammar_cards').select('card_id', { count: 'exact', head: true }),
         supabase.from('hsk_vocab').select('card_id', { count: 'exact', head: true }),
+        supabase.from('basic_chinese_vocab').select('card_id', { count: 'exact', head: true }),
       ]);
 
-      const totalCards = (jpCards || 0) + (grammarCards || 0) + (hskCards || 0);
+      const totalCards = (jpCards || 0) + (grammarCards || 0) + (hskCards || 0) + (basicChineseCards || 0);
       setTotalSystemCards(totalCards);
 
-      // 2. Kéo dữ liệu đã thuộc
-      const [vocabMemorizedRes, grammarMemorizedRes] = await Promise.all([
+      // 2. Kéo dữ liệu đã thuộc từ tất cả các phần học
+      const [vocabMemorizedRes, grammarMemorizedRes, hskMemorizedRes, basicChineseMemorizedRes] = await Promise.all([
         supabase.from('user_memorized_cards').select('user_id, card_id'),
         supabase.from('user_memorized_grammar').select('user_id, card_id'),
+        supabase.from('user_memorized_hsk').select('user_id, card_id'),
+        supabase.from('user_memorized_basic_chinese').select('user_id, card_id'),
       ]);
 
       const userCounts: { [key: string]: number } = {};
@@ -49,6 +53,14 @@ export function useDashboard() {
       });
 
       grammarMemorizedRes.data?.forEach((item: any) => {
+        userCounts[item.user_id] = (userCounts[item.user_id] || 0) + 1;
+      });
+
+      hskMemorizedRes.data?.forEach((item: any) => {
+        userCounts[item.user_id] = (userCounts[item.user_id] || 0) + 1;
+      });
+
+      basicChineseMemorizedRes.data?.forEach((item: any) => {
         userCounts[item.user_id] = (userCounts[item.user_id] || 0) + 1;
       });
 
@@ -112,7 +124,7 @@ export function useDashboard() {
     }
   }, []);
 
-  // Chỉ khởi tạo 1 lần duy nhất khi Mount trang
+  // Khởi tạo 1 lần duy nhất khi Mount trang
   useEffect(() => {
     let isMounted = true;
     const init = async () => {
@@ -158,7 +170,6 @@ export function useDashboard() {
 
       toast.success(`Cập nhật quyền cho ${targetName} thành công!`);
       
-      // Cập nhật ngay lập tức UI mà không tốn reload
       setSelectedProfile((prev: any) => prev ? { ...prev, role: newRole } : null);
       if (user) await fetchDashboardData(user);
     } catch (err: any) {
@@ -213,6 +224,15 @@ export function useDashboard() {
     { code: 'HSK6', label: 'Tiếng Trung HSK 6', equiv: 'Thành thạo (Trên N1)' },
   ];
 
+  const basicChineseLevels = [
+    { code: 'CB1', label: 'Tiếng Trung Cơ Bản 1', equiv: 'Nhập môn - Nhận diện chữ & giao tiếp cơ bản' },
+    { code: 'CB2', label: 'Tiếng Trung Cơ Bản 2', equiv: 'Sơ cấp - Mở rộng từ vựng giao tiếp hàng ngày' },
+    { code: 'CB3', label: 'Tiếng Trung Cơ Bản 3', equiv: 'Trung cấp - Làm quen câu phức & giao tiếp thành thạo' },
+    { code: 'CB4', label: 'Tiếng Trung Cơ Bản 4', equiv: 'Nâng cao (Sắp ra mắt)' },
+    { code: 'CB5', label: 'Tiếng Trung Cơ Bản 5', equiv: 'Nâng cao (Sắp ra mắt)' },
+    { code: 'CB6', label: 'Tiếng Trung Cơ Bản 6', equiv: 'Chuyên sâu (Sắp ra mắt)' },
+  ];
+
   const handleOpenMyProfile = () => {
     const myWords = leaderboardData.find((p) => p.is_current)?.total_words || 0;
     setSelectedProfile({
@@ -242,8 +262,11 @@ export function useDashboard() {
     setIsGrammarModalOpen,
     isHskModalOpen,
     setIsHskModalOpen,
+    isBasicChineseModalOpen,
+    setIsBasicChineseModalOpen,
     levels,
     hskLevels,
+    basicChineseLevels,
     handleOpenMyProfile,
     handleToggleRoleFromModal,
     handleResetPasswordFromModal,

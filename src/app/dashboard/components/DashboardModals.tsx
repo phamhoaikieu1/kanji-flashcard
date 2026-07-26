@@ -6,12 +6,15 @@ interface ModalsProps {
   router: any;
   levels: any[];
   hskLevels: any[];
+  basicChineseLevels: any[];
   isLevelModalOpen: boolean;
   setIsLevelModalOpen: (val: boolean) => void;
   isGrammarModalOpen: boolean;
   setIsGrammarModalOpen: (val: boolean) => void;
   isHskModalOpen: boolean;
   setIsHskModalOpen: (val: boolean) => void;
+  isBasicChineseModalOpen: boolean;
+  setIsBasicChineseModalOpen: (val: boolean) => void;
   selectedProfile: any;
   setSelectedProfile: (val: any) => void;
   totalSystemCards: number;
@@ -24,12 +27,15 @@ export function DashboardModals({
   router,
   levels,
   hskLevels,
+  basicChineseLevels,
   isLevelModalOpen,
   setIsLevelModalOpen,
   isGrammarModalOpen,
   setIsGrammarModalOpen,
   isHskModalOpen,
   setIsHskModalOpen,
+  isBasicChineseModalOpen,
+  setIsBasicChineseModalOpen,
   selectedProfile,
   setSelectedProfile,
   totalSystemCards,
@@ -71,7 +77,7 @@ export function DashboardModals({
 
   return (
     <>
-      {/* 📚 POPUP 1: CHỌN TRÌNH ĐỘ TỪ VỰNG */}
+      {/* 📚 POPUP 1: CHỌN TRÌNH ĐỘ TỪ VỰNG TIẾNG NHẬT */}
       <AnimatePresence>
         {isLevelModalOpen && (
           <>
@@ -91,7 +97,7 @@ export function DashboardModals({
             >
               <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4" />
               <div className="text-center mb-5">
-                <h3 className="text-base font-black text-slate-800">📚 Chọn Cấp Độ Từ Vựng</h3>
+                <h3 className="text-base font-black text-slate-800">📚 Chọn Cấp Độ Từ Vựng Kanji</h3>
                 <p className="text-xs text-slate-400 font-medium mt-1">Hôm nay bạn muốn rèn luyện Kanji cấp độ nào?</p>
               </div>
 
@@ -127,7 +133,7 @@ export function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* 📖 POPUP 2: CHỌN TRÌNH ĐỘ NGỮ PHÁP */}
+      {/* 📖 POPUP 2: CHỌN TRÌNH ĐỘ NGỮ PHÁP TIẾNG NHẬT */}
       <AnimatePresence>
         {isGrammarModalOpen && (
           <>
@@ -183,7 +189,66 @@ export function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* 🇨🇳 POPUP 3: CHỌN TRÌNH ĐỘ TIẾNG TRUNG HSK */}
+      {/* 🏮 POPUP 3: CHỌN CẤP ĐỘ TIẾNG TRUNG CƠ BẢN (CB1-CB6) */}
+      <AnimatePresence>
+        {isBasicChineseModalOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsBasicChineseModalOpen(false)}
+              className="fixed inset-0 bg-slate-900/40 z-40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-[2rem] p-6 shadow-2xl max-w-md mx-auto border-t border-slate-100 max-h-[85vh] flex flex-col"
+            >
+              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4 flex-shrink-0" />
+              <div className="text-center mb-4 flex-shrink-0">
+                <h3 className="text-base font-black text-slate-800">🏮 Chọn Cấp Độ Tiếng Trung Cơ Bản</h3>
+                <p className="text-xs text-slate-400 font-medium mt-1">Hôm nay bạn muốn rèn luyện cấp độ mấy?</p>
+              </div>
+
+              <div className="w-full flex flex-col space-y-2 mb-4 overflow-y-auto no-scrollbar pr-0.5">
+                {basicChineseLevels.map((lvl) => (
+                  <button
+                    key={lvl.code}
+                    onClick={() => {
+                      setIsBasicChineseModalOpen(false);
+                      toast.success(`Đang mở Tiếng Trung ${lvl.code}...`);
+                      router.push(`/basic-chinese?level=${lvl.code}`);
+                    }}
+                    className="w-full bg-slate-50 hover:bg-emerald-50 hover:border-emerald-100 py-3 px-4 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.98] transition-all flex items-center justify-between text-left group"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-slate-700 group-hover:text-emerald-600 transition-colors">
+                        {lvl.label}
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">{lvl.equiv}</p>
+                    </div>
+                    <span className="text-slate-300 group-hover:text-emerald-500 transition-colors font-bold text-xs">
+                      Học ngay →
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setIsBasicChineseModalOpen(false)}
+                className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200 flex-shrink-0"
+              >
+                Đóng
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* 🇨🇳 POPUP 4: CHỌN TRÌNH ĐỘ TIẾNG TRUNG HSK */}
       <AnimatePresence>
         {isHskModalOpen && (
           <>
@@ -242,7 +307,7 @@ export function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* 🚀 POPUP 4: XEM PROFILE CHÉO & QUẢN TRỊ TƯƠNG TÁC */}
+      {/* 🚀 POPUP 5: XEM PROFILE CHÉO & QUẢN TRỊ TƯƠNG TÁC */}
       <AnimatePresence>
         {selectedProfile && (
           <>
@@ -299,7 +364,7 @@ export function DashboardModals({
                     )}
                     {!isTargetOwner && !isTargetAdmin && (
                       <span className="bg-slate-100 text-slate-700 text-[10px] px-2 py-0.5 rounded-full font-bold border border-slate-200">
-                        📚 HỌC VIÊN KANJI
+                        📚 HỌC VIÊN
                       </span>
                     )}
                     {selectedProfile.is_current && (
@@ -318,7 +383,7 @@ export function DashboardModals({
                   </div>
                 </div>
 
-                {/* NÚT TƯƠNG TÁC KHỐI QUẢN TRỊ (CHỈ CHO OWNER / ADMIN) */}
+                {/* NÚT TƯƠNG TÁC KHỐI QUẢN TRỊ */}
                 {(canResetTargetPass || canChangeTargetRole) && (
                   <div className="w-full bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2 mt-1">
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider text-center">
@@ -356,7 +421,6 @@ export function DashboardModals({
                       )}
                     </div>
 
-                    {/* FORM ĐỔI MẬT KHẨU NHANH BẬT RA KHI BẤM NÚT */}
                     {showResetPassInput && (
                       <form onSubmit={handleResetPasswordSubmit} className="pt-2 space-y-2">
                         <input
