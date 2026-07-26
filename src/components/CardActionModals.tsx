@@ -7,13 +7,10 @@ interface CardActionModalsProps {
   currentCard: any;
   cardType: 'kanji' | 'grammar' | 'hsk' | 'basic_chinese';
   userId?: string;
-  // State Modal Báo lỗi
   isReportModalOpen: boolean;
   setIsReportModalOpen: (val: boolean) => void;
-  // State Modal Sửa thẻ
   isEditModalOpen: boolean;
   setIsEditModalOpen: (val: boolean) => void;
-  // Callback cập nhật UI sau khi Admin sửa thẻ xong
   onCardUpdated?: (updatedData: any) => void;
 }
 
@@ -32,31 +29,52 @@ export function CardActionModals({
   const [reportDesc, setReportDesc] = useState('');
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
-  // State Form Sửa Thẻ (Khởi tạo chuẩn tất cả các trường là chuỗi rỗng '')
-  const [editFormData, setEditFormData] = useState<any>({
-    hanzi: '',
-    pinyin: '',
-    han_viet: '',
-    word_type: '',
-    vi_meaning: '',
-    example_zh: '',
-    example_vi: '',
-  });
+  // State Form Sửa Thẻ Linh Hoạt
+  const [editFormData, setEditFormData] = useState<any>({});
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
 
+  // Map dữ liệu thẻ vào Form dựa theo từng cardType cụ thể
   useEffect(() => {
-    if (currentCard) {
+    if (!currentCard) return;
+
+    if (cardType === 'kanji') {
       setEditFormData({
-        hanzi: currentCard.hanzi || currentCard.kanji || currentCard.title || '',
+        kanji: currentCard.kanji || '',
+        ja_writing: currentCard.ja_writing || '',
+        han_viet: currentCard.han_viet || '',
+        vi_meaning: currentCard.vi_meaning || '',
+        example_ja: currentCard.example_ja || '',
+        example_vi: currentCard.example_vi || '',
+      });
+    } else if (cardType === 'grammar') {
+      setEditFormData({
+        grammar_point: currentCard.grammar_point || '',
+        structure: currentCard.structure || '',
+        vi_meaning: currentCard.vi_meaning || '',
+        example_ja: currentCard.example_ja || '',
+        example_vi: currentCard.example_vi || '',
+        usage_note: currentCard.usage_note || '',
+      });
+    } else if (cardType === 'hsk') {
+      // 🎯 Dành riêng cho HSK Nâng cao: Chỉ chứa đúng 3 trường chuẩn
+      setEditFormData({
+        hanzi: currentCard.hanzi || currentCard.kanji || '',
         pinyin: currentCard.pinyin || currentCard.ja_writing || '',
+        vi_meaning: currentCard.vi_meaning || '',
+      });
+    } else {
+      // Basic Chinese (Tiếng Trung Cơ Bản)
+      setEditFormData({
+        hanzi: currentCard.hanzi || '',
+        pinyin: currentCard.pinyin || '',
         han_viet: currentCard.han_viet || '',
         word_type: currentCard.word_type || '',
-        vi_meaning: currentCard.vi_meaning || currentCard.meaning || '',
-        example_zh: currentCard.example_zh || currentCard.example_ja || '',
+        vi_meaning: currentCard.vi_meaning || '',
+        example_zh: currentCard.example_zh || '',
         example_vi: currentCard.example_vi || '',
       });
     }
-  }, [currentCard]);
+  }, [currentCard, cardType]);
 
   // Xử lý gửi báo cáo lỗi
   const handleReportSubmit = async (e: React.FormEvent) => {
@@ -133,7 +151,8 @@ export function CardActionModals({
               <span>🚨</span> <span>Báo Cáo Thẻ Bài Lỗi</span>
             </h3>
             <p className="text-xs text-slate-500 font-medium">
-              Mã thẻ: <strong className="text-slate-800">{currentCard?.card_id}</strong> ({currentCard?.hanzi || currentCard?.kanji})
+              Mã thẻ: <strong className="text-slate-800">{currentCard?.card_id}</strong> (
+              {currentCard?.kanji || currentCard?.grammar_point || currentCard?.hanzi})
             </p>
 
             <form onSubmit={handleReportSubmit} className="space-y-3">
@@ -144,11 +163,11 @@ export function CardActionModals({
                   onChange={(e) => setReportType(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 bg-white outline-none cursor-pointer"
                 >
-                  <option value="meaning" className="text-slate-900 font-bold bg-white">Sai nghĩa Tiếng Việt</option>
-                  <option value="pinyin" className="text-slate-900 font-bold bg-white">Sai phiên âm Pinyin / Kana</option>
-                  <option value="han_viet" className="text-slate-900 font-bold bg-white">Sai âm Hán Việt</option>
-                  <option value="example" className="text-slate-900 font-bold bg-white">Lỗi ví dụ minh họa</option>
-                  <option value="other" className="text-slate-900 font-bold bg-white">Lỗi khác</option>
+                  <option value="meaning">Sai nghĩa Tiếng Việt</option>
+                  <option value="reading">Sai phiên âm / Cách đọc (Pinyin/Hiragana)</option>
+                  <option value="han_viet">Sai âm Hán Việt</option>
+                  <option value="example">Lỗi ví dụ minh họa / Cấu trúc</option>
+                  <option value="other">Lỗi khác</option>
                 </select>
               </div>
 
@@ -175,7 +194,7 @@ export function CardActionModals({
                 <button
                   type="submit"
                   disabled={isSubmittingReport}
-                  className="w-1/2 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold rounded-xl text-xs shadow-md disabled:bg-slate-300"
+                  className="w-1/2 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold rounded-xl text-xs shadow-md disabled:bg-slate-300 cursor-pointer"
                 >
                   {isSubmittingReport ? 'Đang gửi...' : 'Gửi Báo Cáo'}
                 </button>
@@ -190,83 +209,261 @@ export function CardActionModals({
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 w-full max-w-md space-y-4 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
             <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
-              <span>✏️</span> <span>Sửa Thẻ Bài ({currentCard?.card_id})</span>
+              <span>✏️</span> <span>Sửa Thẻ ({currentCard?.card_id})</span>
             </h3>
 
             <form onSubmit={handleEditSubmit} className="space-y-3">
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="text-[11px] font-bold text-slate-700 block mb-1">Chữ Hán / Kanji</label>
-                  <input
-                    type="text"
-                    value={editFormData.hanzi || ''}
-                    onChange={(e) => setEditFormData({ ...editFormData, hanzi: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-serif font-bold text-slate-900 outline-none bg-white"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-bold text-slate-700 block mb-1">Pinyin / Phiên âm</label>
-                  <input
-                    type="text"
-                    value={editFormData.pinyin || ''}
-                    onChange={(e) => setEditFormData({ ...editFormData, pinyin: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono font-bold text-slate-900 outline-none bg-white"
-                  />
-                </div>
-              </div>
+              {/* 🏮 FORM 1: TỪ VỰNG KANJI */}
+              {cardType === 'kanji' && (
+                <>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">Từ Kanji</label>
+                      <input
+                        type="text"
+                        value={editFormData.kanji || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, kanji: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-serif font-bold text-slate-900 outline-none bg-white"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">Hiragana / Furigana</label>
+                      <input
+                        type="text"
+                        value={editFormData.ja_writing || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, ja_writing: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono font-bold text-slate-900 outline-none bg-white"
+                      />
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="text-[11px] font-bold text-slate-700 block mb-1">Âm Hán Việt</label>
-                  <input
-                    type="text"
-                    value={editFormData.han_viet || ''}
-                    onChange={(e) => setEditFormData({ ...editFormData, han_viet: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 outline-none bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-bold text-slate-700 block mb-1">Loại từ (Danh, Động...)</label>
-                  <input
-                    type="text"
-                    value={editFormData.word_type || ''}
-                    onChange={(e) => setEditFormData({ ...editFormData, word_type: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 outline-none bg-white"
-                  />
-                </div>
-              </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Âm Hán Việt</label>
+                    <input
+                      type="text"
+                      value={editFormData.han_viet || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, han_viet: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 outline-none bg-white"
+                    />
+                  </div>
 
-              <div>
-                <label className="text-[11px] font-bold text-slate-700 block mb-1">Nghĩa Tiếng Việt</label>
-                <input
-                  type="text"
-                  value={editFormData.vi_meaning || ''}
-                  onChange={(e) => setEditFormData({ ...editFormData, vi_meaning: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 outline-none bg-white"
-                  required
-                />
-              </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Nghĩa Tiếng Việt</label>
+                    <input
+                      type="text"
+                      value={editFormData.vi_meaning || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, vi_meaning: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 outline-none bg-white"
+                      required
+                    />
+                  </div>
 
-              <div>
-                <label className="text-[11px] font-bold text-slate-700 block mb-1">Ví dụ minh họa (Gốc)</label>
-                <textarea
-                  value={editFormData.example_zh || ''}
-                  onChange={(e) => setEditFormData({ ...editFormData, example_zh: e.target.value })}
-                  rows={2}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 text-xs font-serif text-slate-900 outline-none bg-white"
-                />
-              </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Ví dụ Tiếng Nhật</label>
+                    <textarea
+                      value={editFormData.example_ja || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, example_ja: e.target.value })}
+                      rows={2}
+                      className="w-full p-2.5 rounded-xl border border-slate-300 text-xs text-slate-900 outline-none bg-white font-sans"
+                    />
+                  </div>
 
-              <div>
-                <label className="text-[11px] font-bold text-slate-700 block mb-1">Dịch nghĩa ví dụ (Tiếng Việt)</label>
-                <textarea
-                  value={editFormData.example_vi || ''}
-                  onChange={(e) => setEditFormData({ ...editFormData, example_vi: e.target.value })}
-                  rows={2}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 text-xs text-slate-900 outline-none bg-white"
-                />
-              </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Dịch nghĩa ví dụ (Tiếng Việt)</label>
+                    <textarea
+                      value={editFormData.example_vi || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, example_vi: e.target.value })}
+                      rows={2}
+                      className="w-full p-2.5 rounded-xl border border-slate-300 text-xs text-slate-900 outline-none bg-white"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* 📖 FORM 2: NGỮ PHÁP TIẾNG NHẬT */}
+              {cardType === 'grammar' && (
+                <>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Mẫu Ngữ Pháp</label>
+                    <input
+                      type="text"
+                      value={editFormData.grammar_point || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, grammar_point: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-indigo-900 outline-none bg-white"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Cấu Trúc Kết Hợp</label>
+                    <textarea
+                      value={editFormData.structure || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, structure: e.target.value })}
+                      rows={2}
+                      className="w-full p-2.5 rounded-xl border border-slate-300 text-xs font-mono text-slate-900 outline-none bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Nghĩa Tiếng Việt</label>
+                    <input
+                      type="text"
+                      value={editFormData.vi_meaning || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, vi_meaning: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 outline-none bg-white"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Ví dụ Tiếng Nhật</label>
+                    <textarea
+                      value={editFormData.example_ja || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, example_ja: e.target.value })}
+                      rows={2}
+                      className="w-full p-2.5 rounded-xl border border-slate-300 text-xs text-slate-900 outline-none bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Dịch nghĩa ví dụ (Tiếng Việt)</label>
+                    <textarea
+                      value={editFormData.example_vi || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, example_vi: e.target.value })}
+                      rows={2}
+                      className="w-full p-2.5 rounded-xl border border-slate-300 text-xs text-slate-900 outline-none bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Lưu ý cách dùng</label>
+                    <textarea
+                      value={editFormData.usage_note || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, usage_note: e.target.value })}
+                      rows={2}
+                      className="w-full p-2.5 rounded-xl border border-slate-300 text-xs text-slate-900 outline-none bg-white"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* 🏮 FORM 3: HSK NÂNG CAO (CHỈ 3 TRƯỜNG CHUẨN) */}
+              {cardType === 'hsk' && (
+                <>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">Chữ Hán (Hanzi)</label>
+                      <input
+                        type="text"
+                        value={editFormData.hanzi || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, hanzi: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-serif font-bold text-slate-900 outline-none bg-white"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">Pinyin</label>
+                      <input
+                        type="text"
+                        value={editFormData.pinyin || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, pinyin: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono font-bold text-slate-900 outline-none bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Nghĩa Tiếng Việt</label>
+                    <input
+                      type="text"
+                      value={editFormData.vi_meaning || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, vi_meaning: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 outline-none bg-white"
+                      required
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* 🏮 FORM 4: TIẾNG TRUNG CƠ BẢN (BASIC CHINESE - ĐẦY ĐỦ TRƯỜNG) */}
+              {cardType === 'basic_chinese' && (
+                <>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">Chữ Hán (Hanzi)</label>
+                      <input
+                        type="text"
+                        value={editFormData.hanzi || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, hanzi: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-serif font-bold text-slate-900 outline-none bg-white"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">Pinyin</label>
+                      <input
+                        type="text"
+                        value={editFormData.pinyin || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, pinyin: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono font-bold text-slate-900 outline-none bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">Âm Hán Việt</label>
+                      <input
+                        type="text"
+                        value={editFormData.han_viet || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, han_viet: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 outline-none bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">Loại từ (Danh, Động...)</label>
+                      <input
+                        type="text"
+                        value={editFormData.word_type || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, word_type: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 outline-none bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Nghĩa Tiếng Việt</label>
+                    <input
+                      type="text"
+                      value={editFormData.vi_meaning || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, vi_meaning: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 outline-none bg-white"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Ví dụ Tiếng Trung</label>
+                    <textarea
+                      value={editFormData.example_zh || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, example_zh: e.target.value })}
+                      rows={2}
+                      className="w-full p-2.5 rounded-xl border border-slate-300 text-xs font-serif text-slate-900 outline-none bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Dịch nghĩa ví dụ (Tiếng Việt)</label>
+                    <textarea
+                      value={editFormData.example_vi || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, example_vi: e.target.value })}
+                      rows={2}
+                      className="w-full p-2.5 rounded-xl border border-slate-300 text-xs text-slate-900 outline-none bg-white"
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="flex gap-2 pt-2">
                 <button
@@ -279,7 +476,7 @@ export function CardActionModals({
                 <button
                   type="submit"
                   disabled={isSubmittingEdit}
-                  className="w-1/2 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-xl text-xs shadow-md disabled:bg-slate-300"
+                  className="w-1/2 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-xl text-xs shadow-md disabled:bg-slate-300 cursor-pointer"
                 >
                   {isSubmittingEdit ? 'Đang lưu...' : 'Lưu Thay Đổi'}
                 </button>

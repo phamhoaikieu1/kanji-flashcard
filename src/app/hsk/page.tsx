@@ -1,14 +1,42 @@
 'use client';
 
-import { Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '@/utils/supabase';
 import { useHskFlashcard } from './components/useHskFlashcard';
 import { HskFlashcardCard } from './components/HskFlashcardCard';
 import { FlashcardControls } from '../flashcard/components/FlashcardControls';
 import { HskFlashcardModals } from './components/HskFlashcardModals';
+import { CardActionModals } from '@/components/CardActionModals';
 
 function HskFlashcardContent() {
   const f = useHskFlashcard();
+  const [isAdminOrOwner, setIsAdminOrOwner] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
+
+  // Trạng thái mở Modal Báo lỗi và Sửa thẻ
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+
+  // Kiểm tra quyền Admin/Owner của user đang đăng nhập
+  useEffect(() => {
+    const checkRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        if (profile && ['admin', 'owner'].includes(profile.role)) {
+          setIsAdminOrOwner(true);
+        }
+      }
+    };
+    checkRole();
+  }, []);
 
   if (f.loadingData) {
     return (
@@ -77,13 +105,16 @@ function HskFlashcardContent() {
         memorizedIds={f.memorizedIds}
         savedIds={f.savedIds}
         frontConfig={f.frontConfig}
+        isAdminOrOwner={isAdminOrOwner}
         onNext={f.handleNextCard}
         onPrev={f.handlePrevCard}
         onToggleMemorize={f.handleToggleMemorize}
         onToggleSave={f.handleToggleSave}
+        onOpenReportModal={() => setIsReportOpen(true)}
+        onOpenEditModal={() => setIsEditOpen(true)}
       />
 
-      {/* 🎛️ Controls (Tái sử dụng component FlashcardControls) */}
+      {/* 🎛️ Controls */}
       <FlashcardControls
         selectedLessonsCount={f.selectedLessons.length}
         availableLessonsCount={f.availableLessons.length}
@@ -110,6 +141,21 @@ function HskFlashcardContent() {
         setIsDisplayModalOpen={f.setIsDisplayModalOpen}
         frontConfig={f.frontConfig}
         setFrontConfig={f.setFrontConfig}
+      />
+
+      {/* 🚨 Modals Báo lỗi & Sửa thẻ trực tiếp */}
+      <CardActionModals
+        currentCard={f.currentCard}
+        cardType="hsk"
+        userId={currentUserId}
+        isReportModalOpen={isReportOpen}
+        setIsReportModalOpen={setIsReportOpen}
+        isEditModalOpen={isEditOpen}
+        setIsEditModalOpen={setIsEditOpen}
+        onCardUpdated={(updated) => {
+          const updatedCards = [...f.displayCards];
+          updatedCards[f.currentIndex] = updated;
+        }}
       />
 
       {/* 📜 Footer Sensei */}

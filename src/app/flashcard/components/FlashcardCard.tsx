@@ -11,10 +11,13 @@ interface CardProps {
   memorizedIds: string[];
   savedIds: string[];
   frontConfig: any;
+  isAdminOrOwner?: boolean;
   onNext: () => void;
   onPrev: () => void;
   onToggleMemorize: (id: string) => void;
   onToggleSave: (id: string) => void;
+  onOpenReportModal: () => void;
+  onOpenEditModal: () => void;
 }
 
 export function FlashcardCard({
@@ -27,10 +30,13 @@ export function FlashcardCard({
   memorizedIds,
   savedIds,
   frontConfig,
+  isAdminOrOwner = false,
   onNext,
   onPrev,
   onToggleMemorize,
   onToggleSave,
+  onOpenReportModal,
+  onOpenEditModal,
 }: CardProps) {
   const handleDragEnd = (_: any, info: any) => {
     if (displayCards.length === 0) return;
@@ -107,8 +113,11 @@ export function FlashcardCard({
                 isMemorized={isMemorized}
                 isSaved={isSaved}
                 cardId={currentCard?.card_id}
+                isAdminOrOwner={isAdminOrOwner}
                 onToggleMemorize={onToggleMemorize}
                 onToggleSave={onToggleSave}
+                onOpenReportModal={onOpenReportModal}
+                onOpenEditModal={onOpenEditModal}
               />
             </div>
           ) : (
@@ -161,8 +170,11 @@ export function FlashcardCard({
                 isMemorized={isMemorized}
                 isSaved={isSaved}
                 cardId={currentCard?.card_id}
+                isAdminOrOwner={isAdminOrOwner}
                 onToggleMemorize={onToggleMemorize}
                 onToggleSave={onToggleSave}
+                onOpenReportModal={onOpenReportModal}
+                onOpenEditModal={onOpenEditModal}
               />
             </div>
           )}
@@ -176,25 +188,54 @@ function CardFooter({
   isMemorized,
   isSaved,
   cardId,
+  isAdminOrOwner = false,
   onToggleMemorize,
   onToggleSave,
+  onOpenReportModal,
+  onOpenEditModal,
 }: {
   isMemorized: boolean;
   isSaved: boolean;
   cardId: string;
+  isAdminOrOwner?: boolean;
   onToggleMemorize: (id: string) => void;
   onToggleSave: (id: string) => void;
+  onOpenReportModal: () => void;
+  onOpenEditModal: () => void;
 }) {
   return (
     <div className="w-full flex items-center justify-between pt-2 border-t border-slate-100 flex-shrink-0 mt-1">
-      <div className="text-[9px] text-slate-400 font-medium leading-tight text-left space-y-0.5">
-        <p>💡 Chạm để lật mặt thẻ</p>
-        <p>👈 Vuốt trái: Từ tiếp theo</p>
-        <p>👉 Vuốt phải: Từ trước đó</p>
+      {/* KHỐI NÚT BÁO LỖI & SỬA THẺ TRỰC TIẾP */}
+      <div className="flex items-center space-x-1" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onOpenReportModal) onOpenReportModal();
+          }}
+          className="px-2 py-1 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 text-[11px] font-bold transition-all active:scale-95 shadow-xs cursor-pointer"
+          title="Báo cáo thẻ này bị sai"
+        >
+          🚨 Lỗi
+        </button>
+
+        {isAdminOrOwner && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onOpenEditModal) onOpenEditModal();
+            }}
+            className="px-2 py-1 rounded-xl bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200 text-[11px] font-bold transition-all active:scale-95 shadow-xs cursor-pointer"
+            title="Chỉnh sửa thẻ này"
+          >
+            ✏️ Sửa
+          </button>
+        )}
       </div>
 
+      {/* KHỐI NÚT LƯU & THUỘC THẺ */}
       <div className="flex items-center space-x-1.5" onClick={(e) => e.stopPropagation()}>
-        {/* Nút Đã Lưu (Ngôi sao vàng) */}
         <label
           className={`flex items-center space-x-1 px-2 py-1.5 rounded-xl border cursor-pointer select-none active:scale-95 transition-all ${
             isSaved ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-100 border-slate-200 text-slate-600'
@@ -210,7 +251,6 @@ function CardFooter({
           <span className="text-xs font-bold">{isSaved ? 'Đã lưu' : 'Lưu'}</span>
         </label>
 
-        {/* Nút Đã thuộc */}
         <label className="flex items-center space-x-1 bg-slate-100 px-2 py-1.5 rounded-xl border border-slate-200 cursor-pointer select-none active:scale-95 transition-transform">
           <input
             type="checkbox"

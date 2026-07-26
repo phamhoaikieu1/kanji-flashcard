@@ -1,14 +1,42 @@
 'use client';
 
-import { Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '@/utils/supabase';
 import { useFlashcard } from './components/useFlashcard';
 import { FlashcardCard } from './components/FlashcardCard';
 import { FlashcardControls } from './components/FlashcardControls';
 import { FlashcardModals } from './components/FlashcardModals';
+import { CardActionModals } from '@/components/CardActionModals';
 
 function FlashcardContent() {
   const f = useFlashcard();
+  const [isAdminOrOwner, setIsAdminOrOwner] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
+
+  // Trạng thái mở Modal Báo lỗi và Sửa thẻ
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+
+  // Kiểm tra quyền Admin/Owner của user đang đăng nhập
+  useEffect(() => {
+    const checkRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        if (profile && ['admin', 'owner'].includes(profile.role)) {
+          setIsAdminOrOwner(true);
+        }
+      }
+    };
+    checkRole();
+  }, []);
 
   if (f.loadingData) {
     return (
@@ -77,10 +105,13 @@ function FlashcardContent() {
         memorizedIds={f.memorizedIds}
         savedIds={f.savedIds}
         frontConfig={f.frontConfig}
+        isAdminOrOwner={isAdminOrOwner}
         onNext={f.handleNextCard}
         onPrev={f.handlePrevCard}
         onToggleMemorize={f.handleToggleMemorize}
         onToggleSave={f.handleToggleSave}
+        onOpenReportModal={() => setIsReportOpen(true)}
+        onOpenEditModal={() => setIsEditOpen(true)}
       />
 
       {/* 🎛️ TẦNG 4: Bộ Lọc & Điều Hướng */}
@@ -110,6 +141,21 @@ function FlashcardContent() {
         setIsDisplayModalOpen={f.setIsDisplayModalOpen}
         frontConfig={f.frontConfig}
         setFrontConfig={f.setFrontConfig}
+      />
+
+      {/* 🚨 Modals Báo lỗi & Sửa thẻ trực tiếp */}
+      <CardActionModals
+        currentCard={f.currentCard}
+        cardType="kanji"
+        userId={currentUserId}
+        isReportModalOpen={isReportOpen}
+        setIsReportModalOpen={setIsReportOpen}
+        isEditModalOpen={isEditOpen}
+        setIsEditModalOpen={setIsEditOpen}
+        onCardUpdated={(updated) => {
+          const updatedCards = [...f.displayCards];
+          updatedCards[f.currentIndex] = updated;
+        }}
       />
 
       {/* 📜 TẦNG 5: Footer Sensei */}
