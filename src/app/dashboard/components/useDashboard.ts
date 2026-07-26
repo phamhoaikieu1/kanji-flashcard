@@ -23,23 +23,43 @@ export function useDashboard() {
   const [isGrammarModalOpen, setIsGrammarModalOpen] = useState<boolean>(false);
   const [isHskModalOpen, setIsHskModalOpen] = useState<boolean>(false);
   const [isBasicChineseModalOpen, setIsBasicChineseModalOpen] = useState<boolean>(false);
+  const [isTraditionalChineseModalOpen, setIsTraditionalChineseModalOpen] = useState<boolean>(false);
 
   // Hàm fetch dữ liệu độc lập không gây loop
   const fetchDashboardData = useCallback(async (currentUser: any) => {
     try {
-      // 1. Đếm TỔNG SỐ THẺ hệ thống (Bao gồm cả Tiếng Trung Cơ Bản)
-      const [{ count: jpCards }, { count: grammarCards }, { count: hskCards }, { count: basicChineseCards }] = await Promise.all([
+      // 1. Đếm TỔNG SỐ THẺ hệ thống
+      const [
+        { count: jpCards },
+        { count: grammarCards },
+        { count: hskCards },
+        { count: basicChineseCards }
+      ] = await Promise.all([
         supabase.from('flashcards').select('card_id', { count: 'exact', head: true }),
         supabase.from('grammar_cards').select('card_id', { count: 'exact', head: true }),
         supabase.from('hsk_vocab').select('card_id', { count: 'exact', head: true }),
         supabase.from('basic_chinese_vocab').select('card_id', { count: 'exact', head: true }),
       ]);
 
-      const totalCards = (jpCards || 0) + (grammarCards || 0) + (hskCards || 0) + (basicChineseCards || 0);
+      // Kiểm tra an toàn cho bảng Phồn thể (nếu chưa tạo bảng trong Database)
+      let traditionalChineseCards = 0;
+      try {
+        const res = await supabase.from('traditional_chinese_vocab').select('card_id', { count: 'exact', head: true });
+        traditionalChineseCards = res.count || 0;
+      } catch (e) {
+        traditionalChineseCards = 0;
+      }
+
+      const totalCards = (jpCards || 0) + (grammarCards || 0) + (hskCards || 0) + (basicChineseCards || 0) + traditionalChineseCards;
       setTotalSystemCards(totalCards);
 
       // 2. Kéo dữ liệu đã thuộc từ tất cả các phần học
-      const [vocabMemorizedRes, grammarMemorizedRes, hskMemorizedRes, basicChineseMemorizedRes] = await Promise.all([
+      const [
+        vocabMemorizedRes,
+        grammarMemorizedRes,
+        hskMemorizedRes,
+        basicChineseMemorizedRes
+      ] = await Promise.all([
         supabase.from('user_memorized_cards').select('user_id, card_id'),
         supabase.from('user_memorized_grammar').select('user_id, card_id'),
         supabase.from('user_memorized_hsk').select('user_id, card_id'),
@@ -63,6 +83,16 @@ export function useDashboard() {
       basicChineseMemorizedRes.data?.forEach((item: any) => {
         userCounts[item.user_id] = (userCounts[item.user_id] || 0) + 1;
       });
+
+      // Lấy tiến độ thuộc thẻ Phồn thể an toàn
+      try {
+        const { data: tradData } = await supabase.from('user_memorized_traditional_chinese').select('user_id, card_id');
+        tradData?.forEach((item: any) => {
+          userCounts[item.user_id] = (userCounts[item.user_id] || 0) + 1;
+        });
+      } catch (e) {
+        // Bỏ qua nếu chưa có bảng
+      }
 
       // 3. Kéo dữ liệu profiles
       const { data: profileData } = await supabase.from('profiles').select('*');
@@ -233,6 +263,16 @@ export function useDashboard() {
     { code: 'CB6', label: 'Tiếng Trung Cơ Bản 6', equiv: 'Chuyên sâu (Sắp ra mắt)' },
   ];
 
+  // ⛩️ DANH SÁCH CẤP ĐỘ TIẾNG TRUNG PHỒN THỂ (A1 - C2)
+  const traditionalChineseLevels = [
+    { code: 'A1', label: 'Phồn Thể A1', equiv: 'Nhập môn (Sơ cấp 1) - Từ vựng & Giao tiếp cơ bản' },
+    { code: 'A2', label: 'Phồn Thể A2', equiv: 'Sơ cấp 2 - Mở rộng chủ đề cuộc sống hàng ngày' },
+    { code: 'B1', label: 'Phồn Thể B1', equiv: 'Trung cấp 1 - Đọc hiểu đoạn văn & diễn đạt ý kiến' },
+    { code: 'B2', label: 'Phồn Thể B2', equiv: 'Trung cấp 2 - Thảo luận chuyên sâu & làm việc' },
+    { code: 'C1', label: 'Phồn Thể C1', equiv: 'Cao cấp 1 - Sử dụng linh hoạt trong học thuật/kinh doanh' },
+    { code: 'C2', label: 'Phồn Thể C2', equiv: 'Thành thạo - Tương đương người bản xứ' },
+  ];
+
   const handleOpenMyProfile = () => {
     const myWords = leaderboardData.find((p) => p.is_current)?.total_words || 0;
     setSelectedProfile({
@@ -264,9 +304,12 @@ export function useDashboard() {
     setIsHskModalOpen,
     isBasicChineseModalOpen,
     setIsBasicChineseModalOpen,
+    isTraditionalChineseModalOpen,
+    setIsTraditionalChineseModalOpen,
     levels,
     hskLevels,
     basicChineseLevels,
+    traditionalChineseLevels,
     handleOpenMyProfile,
     handleToggleRoleFromModal,
     handleResetPasswordFromModal,

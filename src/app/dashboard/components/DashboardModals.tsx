@@ -7,6 +7,7 @@ interface ModalsProps {
   levels: any[];
   hskLevels: any[];
   basicChineseLevels: any[];
+  traditionalChineseLevels: any[];
   isLevelModalOpen: boolean;
   setIsLevelModalOpen: (val: boolean) => void;
   isGrammarModalOpen: boolean;
@@ -15,6 +16,8 @@ interface ModalsProps {
   setIsHskModalOpen: (val: boolean) => void;
   isBasicChineseModalOpen: boolean;
   setIsBasicChineseModalOpen: (val: boolean) => void;
+  isTraditionalChineseModalOpen: boolean;
+  setIsTraditionalChineseModalOpen: (val: boolean) => void;
   selectedProfile: any;
   setSelectedProfile: (val: any) => void;
   totalSystemCards: number;
@@ -28,6 +31,7 @@ export function DashboardModals({
   levels,
   hskLevels,
   basicChineseLevels,
+  traditionalChineseLevels,
   isLevelModalOpen,
   setIsLevelModalOpen,
   isGrammarModalOpen,
@@ -36,6 +40,8 @@ export function DashboardModals({
   setIsHskModalOpen,
   isBasicChineseModalOpen,
   setIsBasicChineseModalOpen,
+  isTraditionalChineseModalOpen,
+  setIsTraditionalChineseModalOpen,
   selectedProfile,
   setSelectedProfile,
   totalSystemCards,
@@ -110,7 +116,7 @@ export function DashboardModals({
                       toast.success(`Đang mở từ vựng ${lvl.code}...`);
                       router.push(`/flashcard?level=${lvl.code}`);
                     }}
-                    className="w-full bg-slate-50 hover:bg-indigo-50 hover:border-indigo-100 py-3.5 px-4 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.98] transition-all flex items-center justify-between text-left group"
+                    className="w-full bg-slate-50 hover:bg-indigo-50 hover:border-indigo-100 py-3.5 px-4 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.98] transition-all flex items-center justify-between text-left group cursor-pointer"
                   >
                     <span className="text-xs font-bold text-slate-700 group-hover:text-indigo-600 transition-colors">
                       {lvl.label}
@@ -124,7 +130,7 @@ export function DashboardModals({
 
               <button
                 onClick={() => setIsLevelModalOpen(false)}
-                className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200"
+                className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200 cursor-pointer"
               >
                 Đóng
               </button>
@@ -166,7 +172,7 @@ export function DashboardModals({
                       toast.success(`Đang mở ngữ pháp ${lvl.code}...`);
                       router.push(`/grammar?level=${lvl.code}`);
                     }}
-                    className="w-full bg-slate-50 hover:bg-indigo-50 hover:border-indigo-100 py-3.5 px-4 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.98] transition-all flex items-center justify-between text-left group"
+                    className="w-full bg-slate-50 hover:bg-indigo-50 hover:border-indigo-100 py-3.5 px-4 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.98] transition-all flex items-center justify-between text-left group cursor-pointer"
                   >
                     <span className="text-xs font-bold text-slate-700 group-hover:text-indigo-600 transition-colors">
                       {lvl.label}
@@ -180,7 +186,7 @@ export function DashboardModals({
 
               <button
                 onClick={() => setIsGrammarModalOpen(false)}
-                className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200"
+                className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200 cursor-pointer"
               >
                 Đóng
               </button>
@@ -222,7 +228,7 @@ export function DashboardModals({
                       toast.success(`Đang mở Tiếng Trung ${lvl.code}...`);
                       router.push(`/basic-chinese?level=${lvl.code}`);
                     }}
-                    className="w-full bg-slate-50 hover:bg-emerald-50 hover:border-emerald-100 py-3 px-4 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.98] transition-all flex items-center justify-between text-left group"
+                    className="w-full bg-slate-50 hover:bg-emerald-50 hover:border-emerald-100 py-3 px-4 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.98] transition-all flex items-center justify-between text-left group cursor-pointer"
                   >
                     <div>
                       <p className="text-xs font-bold text-slate-700 group-hover:text-emerald-600 transition-colors">
@@ -239,7 +245,7 @@ export function DashboardModals({
 
               <button
                 onClick={() => setIsBasicChineseModalOpen(false)}
-                className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200 flex-shrink-0"
+                className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200 flex-shrink-0 cursor-pointer"
               >
                 Đóng
               </button>
@@ -281,7 +287,7 @@ export function DashboardModals({
                       toast.success(`Đang mở tiếng Trung ${lvl.code}...`);
                       router.push(`/hsk?level=${lvl.code}`);
                     }}
-                    className="w-full bg-slate-50 hover:bg-rose-50 hover:border-rose-100 py-3 px-4 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.98] transition-all flex items-center justify-between text-left group"
+                    className="w-full bg-slate-50 hover:bg-rose-50 hover:border-rose-100 py-3 px-4 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.98] transition-all flex items-center justify-between text-left group cursor-pointer"
                   >
                     <div>
                       <p className="text-xs font-bold text-slate-700 group-hover:text-rose-600 transition-colors">
@@ -298,7 +304,7 @@ export function DashboardModals({
 
               <button
                 onClick={() => setIsHskModalOpen(false)}
-                className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200 flex-shrink-0"
+                className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200 flex-shrink-0 cursor-pointer"
               >
                 Đóng
               </button>
@@ -307,7 +313,66 @@ export function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* 🚀 POPUP 5: XEM PROFILE CHÉO & QUẢN TRỊ TƯƠNG TÁC */}
+      {/* ⛩️ POPUP 5: CHỌN TRÌNH ĐỘ TIẾNG TRUNG PHỒN THỂ (A1 - C2) */}
+      <AnimatePresence>
+        {isTraditionalChineseModalOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsTraditionalChineseModalOpen(false)}
+              className="fixed inset-0 bg-slate-900/40 z-40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-[2rem] p-6 shadow-2xl max-w-md mx-auto border-t border-slate-100 max-h-[85vh] flex flex-col"
+            >
+              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4 flex-shrink-0" />
+              <div className="text-center mb-4 flex-shrink-0">
+                <h3 className="text-base font-black text-slate-800">⛩️ Chọn Cấp Độ Phồn Thể</h3>
+                <p className="text-xs text-slate-400 font-medium mt-1">Hôm nay bạn muốn học Tiếng Trung Phồn Thể cấp độ nào?</p>
+              </div>
+
+              <div className="w-full flex flex-col space-y-2 mb-4 overflow-y-auto no-scrollbar pr-0.5">
+                {traditionalChineseLevels?.map((lvl) => (
+                  <button
+                    key={lvl.code}
+                    onClick={() => {
+                      setIsTraditionalChineseModalOpen(false);
+                      toast.success(`Đang mở Phồn Thể ${lvl.code}...`);
+                      router.push(`/traditional-chinese?level=${lvl.code}`);
+                    }}
+                    className="w-full bg-slate-50 hover:bg-amber-50 hover:border-amber-100 py-3 px-4 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.98] transition-all flex items-center justify-between text-left group cursor-pointer"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-slate-700 group-hover:text-amber-600 transition-colors">
+                        {lvl.label}
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">{lvl.equiv}</p>
+                    </div>
+                    <span className="text-slate-300 group-hover:text-amber-500 transition-colors font-bold text-xs">
+                      Học ngay →
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setIsTraditionalChineseModalOpen(false)}
+                className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200 flex-shrink-0 cursor-pointer"
+              >
+                Đóng
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* 🚀 POPUP 6: XEM PROFILE CHÉO & QUẢN TRỊ TƯƠNG TÁC */}
       <AnimatePresence>
         {selectedProfile && (
           <>
@@ -396,14 +461,14 @@ export function DashboardModals({
                         isTargetAdmin ? (
                           <button
                             onClick={() => onToggleRole(selectedProfile, 'user')}
-                            className="w-1/2 py-2 bg-rose-50 border border-rose-200 text-rose-700 font-extrabold rounded-xl text-[11px] hover:bg-rose-100 active:scale-95 transition-all shadow-sm flex items-center justify-center gap-1"
+                            className="w-1/2 py-2 bg-rose-50 border border-rose-200 text-rose-700 font-extrabold rounded-xl text-[11px] hover:bg-rose-100 active:scale-95 transition-all shadow-sm flex items-center justify-center gap-1 cursor-pointer"
                           >
                             <span>⬇️</span> <span>Hạ Cấp</span>
                           </button>
                         ) : (
                           <button
                             onClick={() => onToggleRole(selectedProfile, 'admin')}
-                            className="w-1/2 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 font-extrabold rounded-xl text-[11px] hover:bg-indigo-100 active:scale-95 transition-all shadow-sm flex items-center justify-center gap-1"
+                            className="w-1/2 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 font-extrabold rounded-xl text-[11px] hover:bg-indigo-100 active:scale-95 transition-all shadow-sm flex items-center justify-center gap-1 cursor-pointer"
                           >
                             <span>⭐</span> <span>Thăng Admin</span>
                           </button>
@@ -414,7 +479,7 @@ export function DashboardModals({
                       {canResetTargetPass && (
                         <button
                           onClick={() => setShowResetPassInput(!showResetPassInput)}
-                          className={`${canChangeTargetRole ? 'w-1/2' : 'w-full'} py-2 bg-white border border-slate-300 text-slate-800 font-extrabold rounded-xl text-[11px] hover:bg-slate-100 active:scale-95 transition-all shadow-sm flex items-center justify-center gap-1`}
+                          className={`${canChangeTargetRole ? 'w-1/2' : 'w-full'} py-2 bg-white border border-slate-300 text-slate-800 font-extrabold rounded-xl text-[11px] hover:bg-slate-100 active:scale-95 transition-all shadow-sm flex items-center justify-center gap-1 cursor-pointer`}
                         >
                           <span>🔑</span> <span>{showResetPassInput ? 'Đóng Đổi MK' : 'Đổi Mật Khẩu'}</span>
                         </button>
@@ -434,7 +499,7 @@ export function DashboardModals({
                         <button
                           type="submit"
                           disabled={isSubmittingPass}
-                          className="w-full py-2 bg-slate-900 text-white font-extrabold rounded-xl text-xs active:scale-95 transition-all shadow-md disabled:bg-slate-400"
+                          className="w-full py-2 bg-slate-900 text-white font-extrabold rounded-xl text-xs active:scale-95 transition-all shadow-md disabled:bg-slate-400 cursor-pointer"
                         >
                           {isSubmittingPass ? 'Đang lưu...' : 'Xác Nhận Đổi Mật Khẩu'}
                         </button>
@@ -451,7 +516,7 @@ export function DashboardModals({
                         setSelectedProfile(null);
                         router.push(`/chat?userId=${selectedProfile.id}`);
                       }}
-                      className="w-full py-3 bg-indigo-600 text-white rounded-2xl text-xs font-extrabold active:scale-95 transition-all hover:bg-indigo-700 shadow-md flex items-center justify-center gap-2"
+                      className="w-full py-3 bg-indigo-600 text-white rounded-2xl text-xs font-extrabold active:scale-95 transition-all hover:bg-indigo-700 shadow-md flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <span>💬</span>
                       <span>Nhắn tin với {selectedProfile.display_name}</span>
@@ -463,7 +528,7 @@ export function DashboardModals({
                       setSelectedProfile(null);
                       setShowResetPassInput(false);
                     }}
-                    className="w-full py-3 bg-slate-100 text-slate-700 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200"
+                    className="w-full py-3 bg-slate-100 text-slate-700 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200 cursor-pointer"
                   >
                     Đóng hồ sơ
                   </button>

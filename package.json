@@ -7,10 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed:vung": "node ../upload-n1.mjs",
-    "seed:grammar": "node ../upload-grammar-n1.mjs",
-    "seed:hsk": "node ../upload-hsk.mjs",
-    "seed:basic": "node ../upload-basic-chinese.mjs"
+    "up-tuvung": "node ../upload-n1.mjs",
+    "up-nguphap": "node ../upload-grammar-n1.mjs",
+    "up-nangcao": "node ../upload-hsk.mjs",
+    "up-coban": "node ../upload-basic-chinese.mjs",
+    "up-phonthe": "node ../upload-phonthe.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",

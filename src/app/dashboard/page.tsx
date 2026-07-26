@@ -39,12 +39,13 @@ export default function DashboardPage() {
           onSelectProfile={d.setSelectedProfile}
         />
 
-        {/* 📚 KHỐI 3: Nút Chọn Học */}
+        {/* 📚 KHỐI 3: Nút Chọn Học (ĐÃ THÊM NÚT PHỒN THỂ) */}
         <LearningButtons
           onOpenVocab={() => d.setIsLevelModalOpen(true)}
           onOpenGrammar={() => d.setIsGrammarModalOpen(true)}
           onOpenBasicChinese={() => d.setIsBasicChineseModalOpen(true)}
           onOpenHsk={() => d.setIsHskModalOpen(true)}
+          onOpenTraditionalChinese={() => d.setIsTraditionalChineseModalOpen(true)}
         />
       </div>
 
@@ -52,7 +53,7 @@ export default function DashboardPage() {
       <div className="fixed bottom-12 right-5 z-30">
         <button
           onClick={() => d.router.push('/chat')}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white p-3.5 rounded-full shadow-2xl active:scale-90 transition-all flex items-center justify-center border-2 border-white/20 group"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white p-3.5 rounded-full shadow-2xl active:scale-90 transition-all flex items-center justify-center border-2 border-white/20 group cursor-pointer"
           title="Trung tâm nhắn tin"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
@@ -74,12 +75,13 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* 📜 MODALS POPUP */}
+      {/* 📜 MODALS POPUP (ĐÃ TRUYỀN THÊM TIẾNG TRUNG PHỒN THỂ) */}
       <DashboardModals
         router={d.router}
         levels={d.levels}
         hskLevels={d.hskLevels}
         basicChineseLevels={d.basicChineseLevels}
+        traditionalChineseLevels={d.traditionalChineseLevels}
         isLevelModalOpen={d.isLevelModalOpen}
         setIsLevelModalOpen={d.setIsLevelModalOpen}
         isGrammarModalOpen={d.isGrammarModalOpen}
@@ -88,6 +90,8 @@ export default function DashboardPage() {
         setIsHskModalOpen={d.setIsHskModalOpen}
         isBasicChineseModalOpen={d.isBasicChineseModalOpen}
         setIsBasicChineseModalOpen={d.setIsBasicChineseModalOpen}
+        isTraditionalChineseModalOpen={d.isTraditionalChineseModalOpen}
+        setIsTraditionalChineseModalOpen={d.setIsTraditionalChineseModalOpen}
         selectedProfile={d.selectedProfile}
         setSelectedProfile={d.setSelectedProfile}
         totalSystemCards={d.totalSystemCards}
