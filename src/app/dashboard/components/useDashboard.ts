@@ -30,27 +30,20 @@ export function useDashboard() {
     try {
       // 1. Đếm TỔNG SỐ THẺ hệ thống
       const [
-        { count: jpCards },
-        { count: grammarCards },
-        { count: hskCards },
-        { count: basicChineseCards }
+        jpRes,
+        grammarRes,
+        hskRes,
+        basicRes,
+        tradRes
       ] = await Promise.all([
         supabase.from('flashcards').select('card_id', { count: 'exact', head: true }),
         supabase.from('grammar_cards').select('card_id', { count: 'exact', head: true }),
         supabase.from('hsk_vocab').select('card_id', { count: 'exact', head: true }),
         supabase.from('basic_chinese_vocab').select('card_id', { count: 'exact', head: true }),
+        supabase.from('traditional_chinese_vocab').select('card_id', { count: 'exact', head: true }),
       ]);
 
-      // Kiểm tra an toàn cho bảng Phồn thể (nếu chưa tạo bảng trong Database)
-      let traditionalChineseCards = 0;
-      try {
-        const res = await supabase.from('traditional_chinese_vocab').select('card_id', { count: 'exact', head: true });
-        traditionalChineseCards = res.count || 0;
-      } catch (e) {
-        traditionalChineseCards = 0;
-      }
-
-      const totalCards = (jpCards || 0) + (grammarCards || 0) + (hskCards || 0) + (basicChineseCards || 0) + traditionalChineseCards;
+      const totalCards = (jpRes.count || 0) + (grammarRes.count || 0) + (hskRes.count || 0) + (basicRes.count || 0) + (tradRes.count || 0);
       setTotalSystemCards(totalCards);
 
       // 2. Kéo dữ liệu đã thuộc từ tất cả các phần học
@@ -58,12 +51,14 @@ export function useDashboard() {
         vocabMemorizedRes,
         grammarMemorizedRes,
         hskMemorizedRes,
-        basicChineseMemorizedRes
+        basicChineseMemorizedRes,
+        traditionalMemorizedRes
       ] = await Promise.all([
         supabase.from('user_memorized_cards').select('user_id, card_id'),
         supabase.from('user_memorized_grammar').select('user_id, card_id'),
         supabase.from('user_memorized_hsk').select('user_id, card_id'),
         supabase.from('user_memorized_basic_chinese').select('user_id, card_id'),
+        supabase.from('user_memorized_traditional_chinese').select('user_id, card_id'),
       ]);
 
       const userCounts: { [key: string]: number } = {};
@@ -84,15 +79,9 @@ export function useDashboard() {
         userCounts[item.user_id] = (userCounts[item.user_id] || 0) + 1;
       });
 
-      // Lấy tiến độ thuộc thẻ Phồn thể an toàn
-      try {
-        const { data: tradData } = await supabase.from('user_memorized_traditional_chinese').select('user_id, card_id');
-        tradData?.forEach((item: any) => {
-          userCounts[item.user_id] = (userCounts[item.user_id] || 0) + 1;
-        });
-      } catch (e) {
-        // Bỏ qua nếu chưa có bảng
-      }
+      traditionalMemorizedRes.data?.forEach((item: any) => {
+        userCounts[item.user_id] = (userCounts[item.user_id] || 0) + 1;
+      });
 
       // 3. Kéo dữ liệu profiles
       const { data: profileData } = await supabase.from('profiles').select('*');
@@ -237,23 +226,35 @@ export function useDashboard() {
     }
   };
 
+  // 📚 TỪ VỰNG TIẾNG NHẬT JLPT
   const levels = [
-    { code: 'N5', label: 'Tiếng Nhật N5' },
-    { code: 'N4', label: 'Tiếng Nhật N4' },
-    { code: 'N3', label: 'Tiếng Nhật N3' },
-    { code: 'N2', label: 'Tiếng Nhật N2' },
-    { code: 'N1', label: 'Tiếng Nhật N1' },
+    { code: 'N5', label: 'Tiếng Nhật N5', equiv: 'Sơ cấp 1 - Nhập môn Hiragana/Katakana & Kanji cơ bản' },
+    { code: 'N4', label: 'Tiếng Nhật N4', equiv: 'Sơ cấp 2 - Giao tiếp hàng ngày & Kanji thông dụng' },
+    { code: 'N3', label: 'Tiếng Nhật N3', equiv: 'Trung cấp - Đọc hiểu hội thoại & ngữ cảnh công việc' },
+    { code: 'N2', label: 'Tiếng Nhật N2', equiv: 'Thượng cấp - Làm việc tại doanh nghiệp Nhật Bản' },
+    { code: 'N1', label: 'Tiếng Nhật N1', equiv: 'Cao cấp - Đọc hiểu báo chí & trình độ chuyên sâu' },
   ];
 
+  // 📖 NGỮ PHÁP TIẾNG NHẬT JLPT
+  const grammarLevels = [
+    { code: 'N5', label: 'Ngữ Pháp N5', equiv: 'Cấu trúc câu cơ bản & cách chia động từ đơn giản' },
+    { code: 'N4', label: 'Ngữ Pháp N4', equiv: 'Mẫu câu biểu thị lý do, điều kiện & giả định' },
+    { code: 'N3', label: 'Ngữ Pháp N3', equiv: 'Mẫu câu trung cấp biểu thị cảm xúc & so sánh' },
+    { code: 'N2', label: 'Ngữ Pháp N2', equiv: 'Mẫu câu trang trọng, kính ngữ & văn phong công sở' },
+    { code: 'N1', label: 'Ngữ Pháp N1', equiv: 'Cấu trúc văn viết, sách báo & văn học cổ điển' },
+  ];
+
+  // 🇨🇳 TIẾNG TRUNG HSK
   const hskLevels = [
-    { code: 'HSK1', label: 'Tiếng Trung HSK 1', equiv: 'Sơ cấp (Tương đương N5)' },
-    { code: 'HSK2', label: 'Tiếng Trung HSK 2', equiv: 'Sơ cấp (Tương đương N4)' },
-    { code: 'HSK3', label: 'Tiếng Trung HSK 3', equiv: 'Trung cấp (Tương đương N3)' },
-    { code: 'HSK4', label: 'Tiếng Trung HSK 4', equiv: 'Trung cấp (Tương đương N2)' },
+    { code: 'HSK1', label: 'Tiếng Trung HSK 1', equiv: 'Sơ cấp 1 (Tương đương N5)' },
+    { code: 'HSK2', label: 'Tiếng Trung HSK 2', equiv: 'Sơ cấp 2 (Tương đương N4)' },
+    { code: 'HSK3', label: 'Tiếng Trung HSK 3', equiv: 'Trung cấp 1 (Tương đương N3)' },
+    { code: 'HSK4', label: 'Tiếng Trung HSK 4', equiv: 'Trung cấp 2 (Tương đương N2)' },
     { code: 'HSK5', label: 'Tiếng Trung HSK 5', equiv: 'Cao cấp (Tương đương N1)' },
-    { code: 'HSK6', label: 'Tiếng Trung HSK 6', equiv: 'Thành thạo (Trên N1)' },
+    { code: 'HSK6', label: 'Tiếng Trung HSK 6', equiv: 'Thành thạo (Trình độ trên N1)' },
   ];
 
+  // 🏮 TIẾNG TRUNG CƠ BẢN
   const basicChineseLevels = [
     { code: 'CB1', label: 'Tiếng Trung Cơ Bản 1', equiv: 'Nhập môn - Nhận diện chữ & giao tiếp cơ bản' },
     { code: 'CB2', label: 'Tiếng Trung Cơ Bản 2', equiv: 'Sơ cấp - Mở rộng từ vựng giao tiếp hàng ngày' },
@@ -263,7 +264,7 @@ export function useDashboard() {
     { code: 'CB6', label: 'Tiếng Trung Cơ Bản 6', equiv: 'Chuyên sâu (Sắp ra mắt)' },
   ];
 
-  // ⛩️ DANH SÁCH CẤP ĐỘ TIẾNG TRUNG PHỒN THỂ (A1 - C2)
+  // ⛩️ TIẾNG TRUNG PHỒN THỂ
   const traditionalChineseLevels = [
     { code: 'A1', label: 'Phồn Thể A1', equiv: 'Nhập môn (Sơ cấp 1) - Từ vựng & Giao tiếp cơ bản' },
     { code: 'A2', label: 'Phồn Thể A2', equiv: 'Sơ cấp 2 - Mở rộng chủ đề cuộc sống hàng ngày' },
@@ -307,6 +308,7 @@ export function useDashboard() {
     isTraditionalChineseModalOpen,
     setIsTraditionalChineseModalOpen,
     levels,
+    grammarLevels,
     hskLevels,
     basicChineseLevels,
     traditionalChineseLevels,

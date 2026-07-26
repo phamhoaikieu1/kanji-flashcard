@@ -66,7 +66,6 @@ export function useGrammar() {
     const fetchCardsAndProgress = async () => {
       setLoadingData(true);
       try {
-        // Lọc trực tiếp cấp độ ở Supabase bằng .eq('level', selectedLevel)
         const { data, error } = await supabase
           .from('grammar_cards')
           .select('*')
@@ -81,7 +80,6 @@ export function useGrammar() {
         }
 
         if (data && data.length > 0) {
-          // Trích xuất số bài học từ card_id (Ví dụ: N1_G01_001 -> Lesson 1)
           const formattedCards = data.map((card) => {
             const match = card.card_id?.match(/_G(\d+)_/i);
             const lessonNum = match ? parseInt(match[1], 10) : (card.lesson || 1);
@@ -101,7 +99,6 @@ export function useGrammar() {
 
           triggerInlineAlert('success', `🎯 Trình độ ${selectedLevel}: Đã nạp ${formattedCards.length} mẫu ngữ pháp!`);
         } else {
-          // Trường hợp cấp độ chưa có dữ liệu -> Đưa về mảng rỗng chuẩn xác
           setAllCards([]);
           setAvailableLessons([]);
           setSelectedLessons([]);
@@ -111,7 +108,7 @@ export function useGrammar() {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const [memorizedRes, savedRes] = await Promise.all([
-            supabase.from('user_memorized_cards').select('card_id').eq('user_id', user.id),
+            supabase.from('user_memorized_grammar').select('card_id').eq('user_id', user.id),
             supabase.from('user_saved_cards').select('card_id').eq('user_id', user.id)
           ]);
 
@@ -201,7 +198,7 @@ export function useGrammar() {
     const isAlreadyMemorized = memorizedIds.includes(cardId);
     if (isAlreadyMemorized) {
       const { error } = await supabase
-        .from('user_memorized_cards')
+        .from('user_memorized_grammar')
         .delete()
         .eq('user_id', user.id)
         .eq('card_id', cardId);
@@ -214,7 +211,7 @@ export function useGrammar() {
       }
     } else {
       const { error } = await supabase
-        .from('user_memorized_cards')
+        .from('user_memorized_grammar')
         .insert([{ user_id: user.id, card_id: cardId }]);
 
       if (error) triggerInlineAlert('error', `Lỗi: ${error.message}`);

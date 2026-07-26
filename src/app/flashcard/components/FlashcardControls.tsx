@@ -28,12 +28,13 @@ export function FlashcardControls({
   onNext,
 }: ControlsProps) {
   return (
-    <div className="w-full space-y-2 flex-shrink-0 my-1">
+    <div className="w-full space-y-2 flex-shrink-0 my-1 select-none">
       <div className="w-full bg-white p-2.5 rounded-2xl border border-slate-200/60 shadow-sm space-y-1.5">
         <div className="grid grid-cols-2 gap-2">
           <button
+            type="button"
             onClick={onOpenLessonModal}
-            className="py-1.5 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center justify-between transition-colors truncate"
+            className="py-1.5 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center justify-between transition-colors truncate cursor-pointer"
           >
             <span className="truncate">
               📚 {selectedLessonsCount === availableLessonsCount ? 'Tất cả bài' : `${selectedLessonsCount} bài`}
@@ -42,8 +43,9 @@ export function FlashcardControls({
           </button>
 
           <button
+            type="button"
             onClick={onOpenDisplayModal}
-            className="py-1.5 px-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl text-xs flex items-center justify-between transition-colors truncate border border-indigo-100"
+            className="py-1.5 px-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl text-xs flex items-center justify-between transition-colors truncate border border-indigo-100 cursor-pointer"
           >
             <span className="truncate">⚙️ Mặt trước</span>
             <span className="text-indigo-400 text-[10px]">▼</span>
@@ -110,17 +112,19 @@ export function FlashcardControls({
 
       <div className="grid grid-cols-3 gap-2 w-full">
         <button
+          type="button"
           disabled={displayCardsLength === 0 || currentIndex === 0}
           onClick={onPrev}
-          className="col-span-1 py-3 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl shadow-sm active:scale-95 transition-all hover:bg-slate-50 text-xs tracking-wide disabled:bg-slate-100 disabled:text-slate-300 disabled:border-slate-100 disabled:cursor-not-allowed"
+          className="col-span-1 py-3 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl shadow-sm active:scale-95 transition-all hover:bg-slate-50 text-xs tracking-wide disabled:bg-slate-100 disabled:text-slate-300 disabled:border-slate-100 disabled:cursor-not-allowed cursor-pointer"
         >
           ← Từ trước
         </button>
 
         <button
+          type="button"
           disabled={displayCardsLength === 0}
           onClick={onNext}
-          className="col-span-2 py-3 bg-slate-900 text-white font-bold rounded-2xl shadow-lg active:scale-98 transition-all hover:bg-slate-800 text-xs tracking-wide disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed"
+          className="col-span-2 py-3 bg-slate-900 text-white font-bold rounded-2xl shadow-lg active:scale-98 transition-all hover:bg-slate-800 text-xs tracking-wide disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed cursor-pointer"
         >
           Từ tiếp theo →
         </button>

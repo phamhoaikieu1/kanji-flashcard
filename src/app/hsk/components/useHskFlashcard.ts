@@ -7,7 +7,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 export function useHskFlashcard() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Mặc định là HSK1 nếu không truyền parameter
   const selectedLevel = searchParams.get('level') || 'HSK1';
 
   const [allCards, setAllCards] = useState<any[]>([]);
@@ -42,7 +41,7 @@ export function useHskFlashcard() {
     setTimeout(() => setInlineAlert(null), 2500);
   };
 
-  // 💾 1. KHÔI PHỤC TRẠNG THÁI TỪ LOCALSTORAGE
+  // 1. KHÔI PHỤC TRẠNG THÁI TỪ LOCALSTORAGE
   useEffect(() => {
     const savedState = localStorage.getItem(`hsk_flashcard_state_${selectedLevel}`);
     if (savedState) {
@@ -63,7 +62,7 @@ export function useHskFlashcard() {
     }
   }, [selectedLevel]);
 
-  // 📥 2. FETCH DỮ LIỆU TỪ BẢNG hsk_vocab
+  // 2. FETCH DỮ LIỆU TỪ BẢNG hsk_vocab
   useEffect(() => {
     const fetchHskCardsAndProgress = async () => {
       setLoadingData(true);
@@ -76,7 +75,7 @@ export function useHskFlashcard() {
         const { data: chunk, error } = await supabase
           .from('hsk_vocab')
           .select('*')
-          .eq('level', selectedLevel) // Filter chính xác cấp độ HSK1 đến HSK6
+          .eq('level', selectedLevel)
           .order('card_id', { ascending: true })
           .range(page * pageSize, (page + 1) * pageSize - 1);
 
@@ -116,7 +115,7 @@ export function useHskFlashcard() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const [memorizedRes, savedRes] = await Promise.all([
-          supabase.from('user_memorized_cards').select('card_id').eq('user_id', user.id),
+          supabase.from('user_memorized_hsk').select('card_id').eq('user_id', user.id),
           supabase.from('user_saved_cards').select('card_id').eq('user_id', user.id)
         ]);
 
@@ -130,7 +129,7 @@ export function useHskFlashcard() {
     fetchHskCardsAndProgress();
   }, [selectedLevel]);
 
-  // 🔍 3. BỘ LỌC TỪ VỰNG
+  // 3. BỘ LỌC TỪ VỰNG
   const displayCards = allCards.filter((card) => {
     const isLessonMatch = selectedLessons.length === 0 || selectedLessons.includes(card.lesson);
     const isLearned = memorizedIds.includes(card.card_id);
@@ -150,7 +149,7 @@ export function useHskFlashcard() {
     }
   }, [filterMode, selectedLessons, isRandom, displayCards.length]);
 
-  // 💾 4. TỰ ĐỘNG LƯU TRẠNG THÁI
+  // 4. TỰ ĐỘNG LƯU TRẠNG THÁI
   useEffect(() => {
     if (!loadingData && allCards.length > 0) {
       const stateToSave = {
@@ -204,7 +203,7 @@ export function useHskFlashcard() {
     const isAlreadyMemorized = memorizedIds.includes(cardId);
     if (isAlreadyMemorized) {
       const { error } = await supabase
-        .from('user_memorized_cards')
+        .from('user_memorized_hsk')
         .delete()
         .eq('user_id', user.id)
         .eq('card_id', cardId);
@@ -217,7 +216,7 @@ export function useHskFlashcard() {
       }
     } else {
       const { error } = await supabase
-        .from('user_memorized_cards')
+        .from('user_memorized_hsk')
         .insert([{ user_id: user.id, card_id: cardId }]);
 
       if (error) triggerInlineAlert('error', `Lỗi: ${error.message}`);

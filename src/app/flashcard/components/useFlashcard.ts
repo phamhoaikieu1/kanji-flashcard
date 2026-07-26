@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -39,7 +41,7 @@ export function useFlashcard() {
     setTimeout(() => setInlineAlert(null), 2500);
   };
 
-  // 💾 1. KHÔI PHỤC TRẠNG THÁI TỪ LOCALSTORAGE KHI VÀO LẠI CẤP ĐỘ NÀY
+  // 1. KHÔI PHỤC TRẠNG THÁI TỪ LOCALSTORAGE KHI VÀO LẠI CẤP ĐỘ NÀY
   useEffect(() => {
     const savedState = localStorage.getItem(`flashcard_state_${selectedLevel}`);
     if (savedState) {
@@ -54,7 +56,6 @@ export function useFlashcard() {
         console.error('Lỗi khi đọc trạng thái đã lưu:', e);
       }
     } else {
-      // Lần đầu mở cấp độ này
       setCurrentIndex(0);
       setFilterMode('all');
       setIsRandom(false);
@@ -98,7 +99,6 @@ export function useFlashcard() {
           .sort((a: any, b: any) => a - b) as number[];
         setAvailableLessons(lessons);
 
-        // Khôi phục bài học đã chọn nếu chưa từng lưu
         const savedState = localStorage.getItem(`flashcard_state_${selectedLevel}`);
         if (!savedState) {
           setSelectedLessons(lessons);
@@ -138,7 +138,6 @@ export function useFlashcard() {
     return true;
   });
 
-  // 🔄 TỰ ĐỘNG RESET HOẶC TỐI ƯU CỦA INDEX KHI ĐỔI BỘ LỌC
   useEffect(() => {
     setIsFlipped(false);
     if (displayCards.length > 0 && currentIndex >= displayCards.length) {
@@ -146,7 +145,6 @@ export function useFlashcard() {
     }
   }, [filterMode, selectedLessons, isRandom, displayCards.length]);
 
-  // 💾 2. TỰ ĐỘNG LƯU TRẠNG THÁI MỖI KHI CÓ THAY ĐỔI
   useEffect(() => {
     if (!loadingData && allCards.length > 0) {
       const stateToSave = {
@@ -191,7 +189,6 @@ export function useFlashcard() {
     }, 200);
   };
 
-  // Toggle Đã thuộc
   const handleToggleMemorize = async (cardId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -226,7 +223,6 @@ export function useFlashcard() {
     }
   };
 
-  // ⭐ Toggle Đã lưu (Quan trọng)
   const handleToggleSave = async (cardId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -260,7 +256,6 @@ export function useFlashcard() {
     }
   };
 
-  // Xác định thẻ an toàn để render
   const safeIndex = currentIndex < displayCards.length ? currentIndex : 0;
   const currentCard = displayCards[safeIndex];
 

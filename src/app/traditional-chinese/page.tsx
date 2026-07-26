@@ -63,9 +63,9 @@ function TraditionalChineseFlashcardContent() {
       <div className="w-full flex flex-col items-center flex-shrink-0 relative">
         <button
           onClick={() => f.router.push('/dashboard')}
-          className="absolute top-0 left-0 text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center space-x-1 transition-colors z-30"
+            className="absolute top-0 left-0 text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center space-x-1 transition-colors z-30 cursor-pointer"
         >
-          <span>←</span> <span>Chọn trình độ khác</span>
+            <span>←</span> <span>Chọn trình độ khác</span>
         </button>
 
         <div className="text-[11px] font-bold text-amber-800 uppercase tracking-widest bg-amber-50 px-3.5 py-1 rounded-full shadow-sm border border-amber-200 mt-5 z-20">

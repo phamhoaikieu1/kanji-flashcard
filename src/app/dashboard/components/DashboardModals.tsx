@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 interface ModalsProps {
   router: any;
   levels: any[];
+  grammarLevels?: any[];
   hskLevels: any[];
   basicChineseLevels: any[];
   traditionalChineseLevels: any[];
@@ -29,6 +30,7 @@ interface ModalsProps {
 export function DashboardModals({
   router,
   levels,
+  grammarLevels,
   hskLevels,
   basicChineseLevels,
   traditionalChineseLevels,
@@ -99,15 +101,15 @@ export function DashboardModals({
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-[2rem] p-6 shadow-2xl max-w-md mx-auto border-t border-slate-100"
+              className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-[2rem] p-6 shadow-2xl max-w-md mx-auto border-t border-slate-100 max-h-[85vh] flex flex-col"
             >
-              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4" />
-              <div className="text-center mb-5">
+              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4 flex-shrink-0" />
+              <div className="text-center mb-4 flex-shrink-0">
                 <h3 className="text-base font-black text-slate-800">📚 Chọn Cấp Độ Từ Vựng Kanji</h3>
                 <p className="text-xs text-slate-400 font-medium mt-1">Hôm nay bạn muốn rèn luyện Kanji cấp độ nào?</p>
               </div>
 
-              <div className="w-full flex flex-col space-y-2.5 mb-4">
+              <div className="w-full flex flex-col space-y-2 mb-4 overflow-y-auto no-scrollbar pr-0.5">
                 {levels.map((lvl) => (
                   <button
                     key={lvl.code}
@@ -116,11 +118,16 @@ export function DashboardModals({
                       toast.success(`Đang mở từ vựng ${lvl.code}...`);
                       router.push(`/flashcard?level=${lvl.code}`);
                     }}
-                    className="w-full bg-slate-50 hover:bg-indigo-50 hover:border-indigo-100 py-3.5 px-4 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.98] transition-all flex items-center justify-between text-left group cursor-pointer"
+                    className="w-full bg-slate-50 hover:bg-indigo-50 hover:border-indigo-100 py-3 px-4 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.98] transition-all flex items-center justify-between text-left group cursor-pointer"
                   >
-                    <span className="text-xs font-bold text-slate-700 group-hover:text-indigo-600 transition-colors">
-                      {lvl.label}
-                    </span>
+                    <div>
+                      <p className="text-xs font-bold text-slate-700 group-hover:text-indigo-600 transition-colors">
+                        {lvl.label}
+                      </p>
+                      {lvl.equiv && (
+                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">{lvl.equiv}</p>
+                      )}
+                    </div>
                     <span className="text-slate-300 group-hover:text-indigo-500 transition-colors font-bold text-xs">
                       Bắt đầu →
                     </span>
@@ -130,7 +137,7 @@ export function DashboardModals({
 
               <button
                 onClick={() => setIsLevelModalOpen(false)}
-                className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200 cursor-pointer"
+                className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200 flex-shrink-0 cursor-pointer"
               >
                 Đóng
               </button>
@@ -155,16 +162,16 @@ export function DashboardModals({
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-[2rem] p-6 shadow-2xl max-w-md mx-auto border-t border-slate-100"
+              className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-[2rem] p-6 shadow-2xl max-w-md mx-auto border-t border-slate-100 max-h-[85vh] flex flex-col"
             >
-              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4" />
-              <div className="text-center mb-5">
+              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4 flex-shrink-0" />
+              <div className="text-center mb-4 flex-shrink-0">
                 <h3 className="text-base font-black text-slate-800">📖 Chọn Cấp Độ Ngữ Pháp</h3>
                 <p className="text-xs text-slate-400 font-medium mt-1">Hôm nay bạn muốn học ngữ pháp cấp độ nào?</p>
               </div>
 
-              <div className="w-full flex flex-col space-y-2.5 mb-4">
-                {levels.map((lvl) => (
+              <div className="w-full flex flex-col space-y-2 mb-4 overflow-y-auto no-scrollbar pr-0.5">
+                {(grammarLevels || levels).map((lvl) => (
                   <button
                     key={lvl.code}
                     onClick={() => {
@@ -172,11 +179,16 @@ export function DashboardModals({
                       toast.success(`Đang mở ngữ pháp ${lvl.code}...`);
                       router.push(`/grammar?level=${lvl.code}`);
                     }}
-                    className="w-full bg-slate-50 hover:bg-indigo-50 hover:border-indigo-100 py-3.5 px-4 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.98] transition-all flex items-center justify-between text-left group cursor-pointer"
+                    className="w-full bg-slate-50 hover:bg-indigo-50 hover:border-indigo-100 py-3 px-4 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.98] transition-all flex items-center justify-between text-left group cursor-pointer"
                   >
-                    <span className="text-xs font-bold text-slate-700 group-hover:text-indigo-600 transition-colors">
-                      {lvl.label}
-                    </span>
+                    <div>
+                      <p className="text-xs font-bold text-slate-700 group-hover:text-indigo-600 transition-colors">
+                        {lvl.label}
+                      </p>
+                      {lvl.equiv && (
+                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">{lvl.equiv}</p>
+                      )}
+                    </div>
                     <span className="text-slate-300 group-hover:text-indigo-500 transition-colors font-bold text-xs">
                       Học ngay →
                     </span>
@@ -186,7 +198,7 @@ export function DashboardModals({
 
               <button
                 onClick={() => setIsGrammarModalOpen(false)}
-                className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200 cursor-pointer"
+                className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200 flex-shrink-0 cursor-pointer"
               >
                 Đóng
               </button>

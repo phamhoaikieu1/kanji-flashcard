@@ -59,9 +59,12 @@ export function HskFlashcardCard({
   const isMemorized = memorizedIds.includes(currentCard?.card_id);
   const isSaved = savedIds.includes(currentCard?.card_id);
 
-  // Chuẩn hóa tên thuộc tính giữa Chữ Hán và Pinyin
-  const hanziText = currentCard?.hanzi || currentCard?.kanji || '---';
-  const pinyinText = currentCard?.pinyin || currentCard?.ja_writing || '---';
+  const hanziText = currentCard?.hanzi || currentCard?.kanji || '';
+  const pinyinText = currentCard?.pinyin || currentCard?.ja_writing || '';
+  const hanVietText = (currentCard?.han_viet && currentCard.han_viet !== 'EMPTY') ? currentCard.han_viet : '';
+  const wordTypeText = (currentCard?.word_type && currentCard.word_type !== 'EMPTY') ? currentCard.word_type : '';
+  const exampleZh = (currentCard?.example_zh || currentCard?.example_ja) !== 'EMPTY' ? (currentCard?.example_zh || currentCard?.example_ja) : '';
+  const exampleVi = (currentCard?.example_vi && currentCard.example_vi !== 'EMPTY') ? currentCard.example_vi : '';
 
   return (
     <div className="w-full h-[360px] md:h-[390px] relative perspective-1000">
@@ -80,30 +83,35 @@ export function HskFlashcardCard({
             transition: { duration: 0.2 },
           }}
           onClick={() => setIsFlipped(!isFlipped)}
-          className="w-full h-full bg-white rounded-3xl shadow-lg border border-rose-100/60 flex flex-col justify-between p-4 cursor-grab active:cursor-grabbing relative overflow-hidden touch-none"
+          className="w-full h-full bg-white rounded-3xl shadow-lg border border-rose-100/80 flex flex-col justify-between p-4 cursor-grab active:cursor-grabbing relative overflow-hidden touch-none"
           style={{ transformStyle: 'preserve-3d' }}
         >
           {!isFlipped ? (
             /* ---------------- MẶT TRƯỚC ---------------- */
             <div className="flex flex-col items-center justify-between h-full w-full relative select-none">
-              <div className="w-full flex items-center justify-start flex-shrink-0">
+              <div className="w-full flex items-center justify-between flex-shrink-0">
                 <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100">
                   Bài {currentCard?.lesson || 1}
                 </span>
+                {wordTypeText && (
+                  <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                    Type: {wordTypeText}
+                  </span>
+                )}
               </div>
 
               <div className="my-auto text-center px-2 flex flex-col items-center justify-center flex-grow space-y-2">
-                {frontConfig?.hanzi && (
+                {frontConfig?.hanzi && hanziText && (
                   <h1 className="text-6xl md:text-7xl font-black text-slate-800 font-serif leading-tight">
                     {hanziText}
                   </h1>
                 )}
-                {frontConfig?.pinyin && (
+                {frontConfig?.pinyin && pinyinText && (
                   <p className="text-base font-bold text-rose-600 bg-rose-50/80 px-3 py-0.5 rounded-xl border border-rose-100 font-sans">
                     {pinyinText}
                   </p>
                 )}
-                {frontConfig?.vi_meaning && (
+                {frontConfig?.vi_meaning && currentCard?.vi_meaning && (
                   <p className="text-sm font-extrabold text-sky-600">{currentCard?.vi_meaning}</p>
                 )}
               </div>
@@ -120,40 +128,63 @@ export function HskFlashcardCard({
               />
             </div>
           ) : (
-            /* ---------------- MẶT SAU ---------------- */
+            /* ---------------- MẶT SAU (LAYOUT CHUẨN ĐỒNG BỘ) ---------------- */
             <div className="flex flex-col justify-between h-full w-full text-left select-none">
-              <div className="w-full space-y-2.5 overflow-y-auto pr-1 flex-grow no-scrollbar">
+              <div className="w-full space-y-2 overflow-y-auto pr-1 flex-grow no-scrollbar">
                 <div className="w-full flex items-center justify-between border-b border-slate-100 pb-1.5">
                   <div>
                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Chữ Hán (Hanzi)</span>
                     <p className="text-2xl font-black text-slate-800 font-serif">{hanziText}</p>
                   </div>
-                  <span className="text-[9px] font-bold bg-rose-50 text-rose-600 border border-rose-100 px-2 py-0.5 rounded-md">
-                    Bài {currentCard?.lesson || 1}
-                  </span>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-[9px] font-bold bg-rose-50 text-rose-600 border border-rose-100 px-2 py-0.5 rounded-md">
+                      Bài {currentCard?.lesson || 1}
+                    </span>
+                    {wordTypeText && (
+                      <span className="text-[9px] font-bold text-slate-400">
+                        Type: {wordTypeText}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                <div>
-                  <span className="text-[9px] font-bold text-rose-500 uppercase tracking-wider block mb-0.5">Phiên âm Pinyin</span>
-                  <p className="text-xs text-rose-700 font-mono bg-rose-50 px-2.5 py-1 rounded-md border border-rose-100 inline-block font-bold">
-                    {pinyinText}
-                  </p>
+                {/* Khối Pinyin & Hán Việt nằm ngang cùng dòng tối ưu diện tích */}
+                <div className="flex items-center gap-2">
+                  {pinyinText && (
+                    <div>
+                      <span className="text-[9px] font-bold text-rose-500 uppercase tracking-wider block mb-0.5">Phiên âm Pinyin</span>
+                      <p className="text-xs text-rose-700 font-mono bg-rose-50 px-2.5 py-0.5 rounded-md border border-rose-100 inline-block font-bold">
+                        {pinyinText}
+                      </p>
+                    </div>
+                  )}
+                  {hanVietText && (
+                    <div>
+                      <span className="text-[9px] font-bold text-amber-600 uppercase tracking-wider block mb-0.5">Hán Việt</span>
+                      <p className="text-xs text-amber-800 font-sans bg-amber-50 px-2.5 py-0.5 rounded-md border border-amber-100 inline-block font-bold">
+                        {hanVietText}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                <div>
-                  <span className="text-[9px] font-bold text-sky-500 uppercase tracking-wider block">Nghĩa tiếng Việt</span>
-                  <p className="text-xs text-slate-800 font-bold leading-snug">{currentCard?.vi_meaning}</p>
-                </div>
+                {currentCard?.vi_meaning && (
+                  <div>
+                    <span className="text-[9px] font-bold text-sky-500 uppercase tracking-wider block">Nghĩa tiếng Việt</span>
+                    <p className="text-xs text-slate-800 font-bold leading-snug">{currentCard?.vi_meaning}</p>
+                  </div>
+                )}
 
-                {(currentCard?.example_zh || currentCard?.example_ja) && (
+                {/* Ẩn hoàn toàn nếu không có ví dụ */}
+                {exampleZh && (
                   <div className="pt-1.5 border-t border-slate-100 w-full">
-                    <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-wider block mb-0.5">Ví dụ</span>
-                    <p className="text-xs text-slate-800 font-medium leading-relaxed bg-indigo-50/40 p-2 rounded-lg border border-indigo-100/60">
-                      {currentCard?.example_zh || currentCard?.example_ja}
+                    <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-wider block mb-0.5">Ví dụ minh họa</span>
+                    <p className="text-xs text-slate-800 font-medium leading-relaxed bg-indigo-50/40 p-2 rounded-lg border border-indigo-100/60 font-serif">
+                      {exampleZh}
                     </p>
-                    {currentCard?.example_vi && (
+                    {exampleVi && (
                       <p className="text-[10px] text-slate-500 mt-0.5 italic leading-snug px-1">
-                        ↳ {currentCard?.example_vi}
+                        ↳ {exampleVi}
                       </p>
                     )}
                   </div>
@@ -199,7 +230,7 @@ function CardFooter({
 }) {
   return (
     <div className="w-full flex items-center justify-between pt-2 border-t border-slate-100 flex-shrink-0 mt-1">
-      {/* KHỐI NÚT BÁO LỖI & SỬA THẺ TRỰC TIẾP */}
+      {/* KHỐI NÚT BÁO LỖI & SỬA THẺ */}
       <div className="flex items-center space-x-1" onClick={(e) => e.stopPropagation()}>
         <button
           type="button"
@@ -250,7 +281,7 @@ function CardFooter({
             type="checkbox"
             checked={isMemorized}
             onChange={() => cardId && onToggleMemorize(cardId)}
-            className="w-3.5 h-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+            className="w-3.5 h-3.5 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer"
           />
           <span className="text-xs font-bold text-slate-600">Đã thuộc</span>
         </label>

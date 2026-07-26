@@ -1,4 +1,3 @@
-// FlashcardModals.tsx
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ModalsProps {
@@ -56,24 +55,24 @@ export function FlashcardModals({
               <div className="flex items-center justify-between mb-3 flex-shrink-0">
                 <h3 className="text-base font-black text-slate-800">📚 Chọn Bài Học (Lesson)</h3>
                 <div className="flex gap-2">
-                  <button onClick={() => setSelectedLessons(availableLessons)} className="text-[11px] font-bold text-indigo-600 hover:underline">
+                  <button onClick={() => setSelectedLessons(availableLessons)} className="text-[11px] font-bold text-indigo-600 hover:underline cursor-pointer">
                     Chọn hết
                   </button>
                   <span className="text-slate-300">|</span>
-                  <button onClick={() => setSelectedLessons([])} className="text-[11px] font-bold text-rose-500 hover:underline">
+                  <button onClick={() => setSelectedLessons([])} className="text-[11px] font-bold text-rose-500 hover:underline cursor-pointer">
                     Bỏ chọn
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-2.5 overflow-y-auto p-1 my-2 flex-grow">
+              <div className="grid grid-cols-4 gap-2.5 overflow-y-auto p-1 my-2 flex-grow no-scrollbar">
                 {availableLessons.map((num) => {
                   const isSelected = selectedLessons.includes(num);
                   return (
                     <button
                       key={num}
                       onClick={() => toggleLessonSelect(num)}
-                      className={`py-2.5 rounded-xl text-xs font-bold border transition-all ${
+                      className={`py-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                         isSelected
                           ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
                           : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
@@ -87,7 +86,7 @@ export function FlashcardModals({
 
               <button
                 onClick={() => setIsLessonModalOpen(false)}
-                className="w-full mt-3 py-3 bg-slate-900 text-white rounded-2xl text-xs font-bold active:scale-95 transition-all flex-shrink-0"
+                className="w-full mt-3 py-3 bg-slate-900 text-white rounded-2xl text-xs font-bold active:scale-95 transition-all flex-shrink-0 cursor-pointer"
               >
                 Xác nhận ({selectedLessons.length} bài)
               </button>
@@ -170,7 +169,7 @@ export function FlashcardModals({
 
               <button
                 onClick={() => setIsDisplayModalOpen(false)}
-                className="w-full py-3 bg-slate-900 text-white rounded-2xl text-xs font-bold active:scale-95 transition-all"
+                className="w-full py-3 bg-slate-900 text-white rounded-2xl text-xs font-bold active:scale-95 transition-all cursor-pointer"
               >
                 Lưu cấu hình
               </button>

@@ -18,7 +18,6 @@ function HskFlashcardContent() {
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
 
-  // Kiểm tra quyền Admin/Owner của user đang đăng nhập
   useEffect(() => {
     const checkRole = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -50,7 +49,7 @@ function HskFlashcardContent() {
     return (
       <div className="text-center space-y-4">
         <p className="text-slate-500 font-medium">Hiện chưa có dữ liệu từ vựng cho trình độ {f.selectedLevel}.</p>
-        <button onClick={() => f.router.push('/dashboard')} className="px-4 py-2 bg-rose-600 text-white rounded-xl text-sm font-bold">
+        <button onClick={() => f.router.push('/dashboard')} className="px-4 py-2 bg-rose-600 text-white rounded-xl text-sm font-bold cursor-pointer">
           Quay lại chọn trình độ khác
         </button>
       </div>
@@ -63,7 +62,7 @@ function HskFlashcardContent() {
       <div className="w-full flex flex-col items-center flex-shrink-0 relative">
         <button
           onClick={() => f.router.push('/dashboard')}
-          className="absolute top-0 left-0 text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center space-x-1 transition-colors z-30"
+          className="absolute top-0 left-0 text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center space-x-1 transition-colors z-30 cursor-pointer"
         >
           <span>←</span> <span>Chọn trình độ khác</span>
         </button>

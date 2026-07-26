@@ -55,11 +55,11 @@ export function BasicChineseFlashcardModals({
               <div className="flex items-center justify-between mb-3 flex-shrink-0">
                 <h3 className="text-base font-black text-slate-800">🏮 Chọn Bài Học Tiếng Trung</h3>
                 <div className="flex gap-2">
-                  <button onClick={() => setSelectedLessons(availableLessons)} className="text-[11px] font-bold text-emerald-600 hover:underline">
+                  <button onClick={() => setSelectedLessons(availableLessons)} className="text-[11px] font-bold text-emerald-600 hover:underline cursor-pointer">
                     Chọn hết
                   </button>
                   <span className="text-slate-300">|</span>
-                  <button onClick={() => setSelectedLessons([])} className="text-[11px] font-bold text-slate-400 hover:underline">
+                  <button onClick={() => setSelectedLessons([])} className="text-[11px] font-bold text-slate-400 hover:underline cursor-pointer">
                     Bỏ chọn
                   </button>
                 </div>
@@ -72,7 +72,7 @@ export function BasicChineseFlashcardModals({
                     <button
                       key={num}
                       onClick={() => toggleLessonSelect(num)}
-                      className={`py-2.5 rounded-xl text-xs font-bold border transition-all ${
+                      className={`py-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                         isSelected
                           ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
                           : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
@@ -86,7 +86,7 @@ export function BasicChineseFlashcardModals({
 
               <button
                 onClick={() => setIsLessonModalOpen(false)}
-                className="w-full mt-3 py-3 bg-slate-900 text-white rounded-2xl text-xs font-bold active:scale-95 transition-all flex-shrink-0"
+                className="w-full mt-3 py-3 bg-slate-900 text-white rounded-2xl text-xs font-bold active:scale-95 transition-all flex-shrink-0 cursor-pointer"
               >
                 Xác nhận ({selectedLessons.length} bài)
               </button>
@@ -109,7 +109,7 @@ export function BasicChineseFlashcardModals({
             <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
-              exit={{ y: '100%' }}
+              exit={{ y: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-[2rem] p-5 shadow-2xl max-w-md mx-auto border-t border-slate-100 flex flex-col"
             >
@@ -185,7 +185,7 @@ export function BasicChineseFlashcardModals({
 
               <button
                 onClick={() => setIsDisplayModalOpen(false)}
-                className="w-full py-3 bg-slate-900 text-white rounded-2xl text-xs font-bold active:scale-95 transition-all"
+                className="w-full py-3 bg-slate-900 text-white rounded-2xl text-xs font-bold active:scale-95 transition-all cursor-pointer"
               >
                 Lưu cấu hình
               </button>

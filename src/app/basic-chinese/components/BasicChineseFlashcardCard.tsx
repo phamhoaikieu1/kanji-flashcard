@@ -59,9 +59,12 @@ export function BasicChineseFlashcardCard({
   const isMemorized = memorizedIds.includes(currentCard?.card_id);
   const isSaved = savedIds.includes(currentCard?.card_id);
 
-  const hanziText = currentCard?.hanzi || '---';
-  const pinyinText = currentCard?.pinyin || '---';
-  const hanVietText = currentCard?.han_viet || '';
+  const hanziText = currentCard?.hanzi || '';
+  const pinyinText = currentCard?.pinyin || '';
+  const hanVietText = (currentCard?.han_viet && currentCard.han_viet !== 'EMPTY') ? currentCard.han_viet : '';
+  const wordTypeText = (currentCard?.word_type && currentCard.word_type !== 'EMPTY') ? currentCard.word_type : '';
+  const exampleZh = (currentCard?.example_zh && currentCard.example_zh !== 'EMPTY') ? currentCard.example_zh : '';
+  const exampleVi = (currentCard?.example_vi && currentCard.example_vi !== 'EMPTY') ? currentCard.example_vi : '';
 
   return (
     <div className="w-full h-[360px] md:h-[390px] relative perspective-1000">
@@ -90,20 +93,20 @@ export function BasicChineseFlashcardCard({
                 <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
                   Bài {currentCard?.lesson || 1}
                 </span>
-                {currentCard?.word_type && (
+                {wordTypeText && (
                   <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
-                    {currentCard?.word_type}
+                    Type: {wordTypeText}
                   </span>
                 )}
               </div>
 
               <div className="my-auto text-center px-2 flex flex-col items-center justify-center flex-grow space-y-2">
-                {frontConfig?.hanzi && (
+                {frontConfig?.hanzi && hanziText && (
                   <h1 className="text-6xl md:text-7xl font-black text-slate-800 font-serif leading-tight">
                     {hanziText}
                   </h1>
                 )}
-                {frontConfig?.pinyin && (
+                {frontConfig?.pinyin && pinyinText && (
                   <p className="text-base font-bold text-emerald-600 bg-emerald-50/80 px-3 py-0.5 rounded-xl border border-emerald-100 font-sans">
                     {pinyinText}
                   </p>
@@ -113,7 +116,7 @@ export function BasicChineseFlashcardCard({
                     [ Hán Việt: {hanVietText} ]
                   </p>
                 )}
-                {frontConfig?.vi_meaning && (
+                {frontConfig?.vi_meaning && currentCard?.vi_meaning && (
                   <p className="text-sm font-extrabold text-sky-600">{currentCard?.vi_meaning}</p>
                 )}
               </div>
@@ -130,7 +133,7 @@ export function BasicChineseFlashcardCard({
               />
             </div>
           ) : (
-            /* ---------------- MẶT SAU ---------------- */
+            /* ---------------- MẶT SAU CHUẨN OPTIMIZED UI ---------------- */
             <div className="flex flex-col justify-between h-full w-full text-left select-none">
               <div className="w-full space-y-2 overflow-y-auto pr-1 flex-grow no-scrollbar">
                 <div className="w-full flex items-center justify-between border-b border-slate-100 pb-1.5">
@@ -142,21 +145,24 @@ export function BasicChineseFlashcardCard({
                     <span className="text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded-md">
                       Bài {currentCard?.lesson || 1}
                     </span>
-                    {currentCard?.word_type && (
+                    {wordTypeText && (
                       <span className="text-[9px] font-bold text-slate-400">
-                        Type: {currentCard?.word_type}
+                        Type: {wordTypeText}
                       </span>
                     )}
                   </div>
                 </div>
 
+                {/* Khối Pinyin & Hán Việt nằm cùng 1 hàng ngang tối ưu diện tích */}
                 <div className="flex items-center gap-2">
-                  <div>
-                    <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider block mb-0.5">Pinyin</span>
-                    <p className="text-xs text-emerald-800 font-mono bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-100 inline-block font-bold">
-                      {pinyinText}
-                    </p>
-                  </div>
+                  {pinyinText && (
+                    <div>
+                      <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider block mb-0.5">Pinyin</span>
+                      <p className="text-xs text-emerald-800 font-mono bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-100 inline-block font-bold">
+                        {pinyinText}
+                      </p>
+                    </div>
+                  )}
                   {hanVietText && (
                     <div>
                       <span className="text-[9px] font-bold text-amber-600 uppercase tracking-wider block mb-0.5">Hán Việt</span>
@@ -167,20 +173,23 @@ export function BasicChineseFlashcardCard({
                   )}
                 </div>
 
-                <div>
-                  <span className="text-[9px] font-bold text-sky-500 uppercase tracking-wider block">Nghĩa tiếng Việt</span>
-                  <p className="text-xs text-slate-800 font-bold leading-snug">{currentCard?.vi_meaning}</p>
-                </div>
+                {currentCard?.vi_meaning && (
+                  <div>
+                    <span className="text-[9px] font-bold text-sky-500 uppercase tracking-wider block">Nghĩa tiếng Việt</span>
+                    <p className="text-xs text-slate-800 font-bold leading-snug">{currentCard?.vi_meaning}</p>
+                  </div>
+                )}
 
-                {currentCard?.example_zh && (
+                {/* Ẩn hoàn toàn nếu không có ví dụ */}
+                {exampleZh && (
                   <div className="pt-1.5 border-t border-slate-100 w-full">
                     <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-wider block mb-0.5">Ví dụ minh họa</span>
                     <p className="text-xs text-slate-800 font-medium leading-relaxed bg-indigo-50/40 p-2 rounded-lg border border-indigo-100/60 font-serif">
-                      {currentCard?.example_zh}
+                      {exampleZh}
                     </p>
-                    {currentCard?.example_vi && (
+                    {exampleVi && (
                       <p className="text-[10px] text-slate-500 mt-0.5 italic leading-snug px-1">
-                        ↳ {currentCard?.example_vi}
+                        ↳ {exampleVi}
                       </p>
                     )}
                   </div>
@@ -226,11 +235,15 @@ function CardFooter({
 }) {
   return (
     <div className="w-full flex items-center justify-between pt-2 border-t border-slate-100 flex-shrink-0 mt-1">
-      {/* KHỐI NÚT BÁO LỖI & SỬA THẺ TRỰC TIẾP */}
+      {/* NÚT BÁO LỖI & SỬA THẺ */}
       <div className="flex items-center space-x-1" onClick={(e) => e.stopPropagation()}>
         <button
-          onClick={onOpenReportModal}
-          className="px-2 py-1 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 text-[11px] font-bold transition-all active:scale-95 shadow-xs"
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onOpenReportModal) onOpenReportModal();
+          }}
+          className="px-2 py-1 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 text-[11px] font-bold transition-all active:scale-95 shadow-xs cursor-pointer"
           title="Báo cáo thẻ này bị sai"
         >
           🚨 Lỗi
@@ -238,8 +251,12 @@ function CardFooter({
 
         {isAdminOrOwner && (
           <button
-            onClick={onOpenEditModal}
-            className="px-2 py-1 rounded-xl bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200 text-[11px] font-bold transition-all active:scale-95 shadow-xs"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onOpenEditModal) onOpenEditModal();
+            }}
+            className="px-2 py-1 rounded-xl bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200 text-[11px] font-bold transition-all active:scale-95 shadow-xs cursor-pointer"
             title="Chỉnh sửa thẻ này"
           >
             ✏️ Sửa
@@ -247,7 +264,7 @@ function CardFooter({
         )}
       </div>
 
-      {/* KHỐI NÚT LƯU & THUỘC THẺ */}
+      {/* NÚT LƯU & THUỘC THẺ */}
       <div className="flex items-center space-x-1.5" onClick={(e) => e.stopPropagation()}>
         <label
           className={`flex items-center space-x-1 px-2 py-1.5 rounded-xl border cursor-pointer select-none active:scale-95 transition-all ${

@@ -7,7 +7,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 export function useBasicChineseFlashcard() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Mặc định là CB1 nếu không truyền parameter
   const selectedLevel = searchParams.get('level') || 'CB1';
 
   const [allCards, setAllCards] = useState<any[]>([]);
@@ -27,7 +26,7 @@ export function useBasicChineseFlashcard() {
   const [availableLessons, setAvailableLessons] = useState<number[]>([]);
   const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
 
-  // Cấu hình mặt trước (Bổ sung han_viet)
+  // Cấu hình mặt trước
   const [isDisplayModalOpen, setIsDisplayModalOpen] = useState(false);
   const [frontConfig, setFrontConfig] = useState({
     hanzi: true,
@@ -43,7 +42,7 @@ export function useBasicChineseFlashcard() {
     setTimeout(() => setInlineAlert(null), 2500);
   };
 
-  // 💾 1. KHÔI PHỤC TRẠNG THÁI TỪ LOCALSTORAGE
+  // 1. KHÔI PHỤC TRẠNG THÁI TỪ LOCALSTORAGE
   useEffect(() => {
     const savedState = localStorage.getItem(`basic_chinese_flashcard_state_${selectedLevel}`);
     if (savedState) {
@@ -64,7 +63,7 @@ export function useBasicChineseFlashcard() {
     }
   }, [selectedLevel]);
 
-  // 📥 2. FETCH DỮ LIỆU TỪ BẢNG basic_chinese_vocab & TIẾN ĐỘ USER
+  // 2. FETCH DỮ LIỆU TỪ BẢNG basic_chinese_vocab & TIẾN ĐỘ USER
   useEffect(() => {
     const fetchCardsAndProgress = async () => {
       setLoadingData(true);
@@ -77,7 +76,7 @@ export function useBasicChineseFlashcard() {
         const { data: chunk, error } = await supabase
           .from('basic_chinese_vocab')
           .select('*')
-          .eq('level', selectedLevel) // Filter cấp độ CB1 đến CB6
+          .eq('level', selectedLevel)
           .order('card_id', { ascending: true })
           .range(page * pageSize, (page + 1) * pageSize - 1);
 
@@ -131,7 +130,7 @@ export function useBasicChineseFlashcard() {
     fetchCardsAndProgress();
   }, [selectedLevel]);
 
-  // 🔍 3. BỘ LỌC TỪ VỰNG
+  // 3. BỘ LỌC TỪ VỰNG
   const displayCards = allCards.filter((card) => {
     const isLessonMatch = selectedLessons.length === 0 || selectedLessons.includes(card.lesson);
     const isLearned = memorizedIds.includes(card.card_id);
@@ -151,7 +150,7 @@ export function useBasicChineseFlashcard() {
     }
   }, [filterMode, selectedLessons, isRandom, displayCards.length]);
 
-  // 💾 4. TỰ ĐỘNG LƯU TRẠNG THÁI
+  // 4. TỰ ĐỘNG LƯU TRẠNG THÁI
   useEffect(() => {
     if (!loadingData && allCards.length > 0) {
       const stateToSave = {
