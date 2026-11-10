@@ -39,13 +39,14 @@ export default function DashboardPage() {
           onSelectProfile={d.setSelectedProfile}
         />
 
-        {/* 📚 KHỐI 3: Nút Chọn Học (ĐÃ THÊM NÚT PHỒN THỂ) */}
+        {/* 📚 KHỐI 3: Nút Chọn Học */}
         <LearningButtons
           onOpenVocab={() => d.setIsLevelModalOpen(true)}
           onOpenGrammar={() => d.setIsGrammarModalOpen(true)}
           onOpenBasicChinese={() => d.setIsBasicChineseModalOpen(true)}
           onOpenHsk={() => d.setIsHskModalOpen(true)}
           onOpenTraditionalChinese={() => d.setIsTraditionalChineseModalOpen(true)}
+          onOpenEnglish={() => d.setIsEnglishModalOpen(true)}
         />
       </div>
 
@@ -75,13 +76,14 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* 📜 MODALS POPUP (ĐÃ TRUYỀN THÊM TIẾNG TRUNG PHỒN THỂ) */}
+      {/* 📜 MODALS POPUP */}
       <DashboardModals
         router={d.router}
         levels={d.levels}
         hskLevels={d.hskLevels}
         basicChineseLevels={d.basicChineseLevels}
         traditionalChineseLevels={d.traditionalChineseLevels}
+        englishLevels={d.englishLevels}
         isLevelModalOpen={d.isLevelModalOpen}
         setIsLevelModalOpen={d.setIsLevelModalOpen}
         isGrammarModalOpen={d.isGrammarModalOpen}
@@ -92,6 +94,8 @@ export default function DashboardPage() {
         setIsBasicChineseModalOpen={d.setIsBasicChineseModalOpen}
         isTraditionalChineseModalOpen={d.isTraditionalChineseModalOpen}
         setIsTraditionalChineseModalOpen={d.setIsTraditionalChineseModalOpen}
+        isEnglishModalOpen={d.isEnglishModalOpen}
+        setIsEnglishModalOpen={d.setIsEnglishModalOpen}
         selectedProfile={d.selectedProfile}
         setSelectedProfile={d.setSelectedProfile}
         totalSystemCards={d.totalSystemCards}

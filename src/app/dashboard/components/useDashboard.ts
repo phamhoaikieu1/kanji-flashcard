@@ -24,6 +24,7 @@ export function useDashboard() {
   const [isHskModalOpen, setIsHskModalOpen] = useState<boolean>(false);
   const [isBasicChineseModalOpen, setIsBasicChineseModalOpen] = useState<boolean>(false);
   const [isTraditionalChineseModalOpen, setIsTraditionalChineseModalOpen] = useState<boolean>(false);
+  const [isEnglishModalOpen, setIsEnglishModalOpen] = useState<boolean>(false);
 
   // Hàm fetch dữ liệu độc lập không gây loop
   const fetchDashboardData = useCallback(async (currentUser: any) => {
@@ -34,16 +35,18 @@ export function useDashboard() {
         grammarRes,
         hskRes,
         basicRes,
-        tradRes
+        tradRes,
+        englishRes
       ] = await Promise.all([
         supabase.from('flashcards').select('card_id', { count: 'exact', head: true }),
         supabase.from('grammar_cards').select('card_id', { count: 'exact', head: true }),
         supabase.from('hsk_vocab').select('card_id', { count: 'exact', head: true }),
         supabase.from('basic_chinese_vocab').select('card_id', { count: 'exact', head: true }),
         supabase.from('traditional_chinese_vocab').select('card_id', { count: 'exact', head: true }),
+        supabase.from('english_vocab_cards').select('card_id', { count: 'exact', head: true }),
       ]);
 
-      const totalCards = (jpRes.count || 0) + (grammarRes.count || 0) + (hskRes.count || 0) + (basicRes.count || 0) + (tradRes.count || 0);
+      const totalCards = (jpRes.count || 0) + (grammarRes.count || 0) + (hskRes.count || 0) + (basicRes.count || 0) + (tradRes.count || 0) + (englishRes.count || 0);
       setTotalSystemCards(totalCards);
 
       // 2. Kéo dữ liệu đã thuộc từ tất cả các phần học
@@ -52,13 +55,15 @@ export function useDashboard() {
         grammarMemorizedRes,
         hskMemorizedRes,
         basicChineseMemorizedRes,
-        traditionalMemorizedRes
+        traditionalMemorizedRes,
+        englishMemorizedRes
       ] = await Promise.all([
         supabase.from('user_memorized_cards').select('user_id, card_id'),
         supabase.from('user_memorized_grammar').select('user_id, card_id'),
         supabase.from('user_memorized_hsk').select('user_id, card_id'),
         supabase.from('user_memorized_basic_chinese').select('user_id, card_id'),
         supabase.from('user_memorized_traditional_chinese').select('user_id, card_id'),
+        supabase.from('user_memorized_english').select('user_id, card_id'),
       ]);
 
       const userCounts: { [key: string]: number } = {};
@@ -80,6 +85,10 @@ export function useDashboard() {
       });
 
       traditionalMemorizedRes.data?.forEach((item: any) => {
+        userCounts[item.user_id] = (userCounts[item.user_id] || 0) + 1;
+      });
+
+      englishMemorizedRes.data?.forEach((item: any) => {
         userCounts[item.user_id] = (userCounts[item.user_id] || 0) + 1;
       });
 
@@ -274,6 +283,16 @@ export function useDashboard() {
     { code: 'C2', label: 'Phồn Thể C2', equiv: 'Thành thạo - Tương đương người bản xứ' },
   ];
 
+  // 🇬🇧 TIẾNG ANH CEFR
+  const englishLevels = [
+    { code: 'A1', label: 'Tiếng Anh A1', equiv: 'Căn bản (Beginner) - Từ vựng & Mẫu câu giao tiếp nhập môn' },
+    { code: 'A2', label: 'Tiếng Anh A2', equiv: 'Sơ cấp (Elementary) - Chủ đề giao tiếp thông dụng hàng ngày' },
+    { code: 'B1', label: 'Tiếng Anh B1', equiv: 'Trung cấp (Intermediate) - Diễn đạt ý kiến & Đọc hiểu đời sống' },
+    { code: 'B2', label: 'Tiếng Anh B2', equiv: 'Trung cao cấp (Upper-Intermediate) - Thảo luận & Học thuật/Công việc' },
+    { code: 'C1', label: 'Tiếng Anh C1', equiv: 'Cao cấp (Advanced) - Sử dụng linh hoạt trong môi trường chuyên nghiệp' },
+    { code: 'C2', label: 'Tiếng Anh C2', equiv: 'Thành thạo (Proficient) - Trình độ tương đương người bản xứ' },
+  ];
+
   const handleOpenMyProfile = () => {
     const myWords = leaderboardData.find((p) => p.is_current)?.total_words || 0;
     setSelectedProfile({
@@ -307,11 +326,14 @@ export function useDashboard() {
     setIsBasicChineseModalOpen,
     isTraditionalChineseModalOpen,
     setIsTraditionalChineseModalOpen,
+    isEnglishModalOpen,
+    setIsEnglishModalOpen,
     levels,
     grammarLevels,
     hskLevels,
     basicChineseLevels,
     traditionalChineseLevels,
+    englishLevels,
     handleOpenMyProfile,
     handleToggleRoleFromModal,
     handleResetPasswordFromModal,

@@ -3,7 +3,8 @@ interface ButtonsProps {
   onOpenGrammar: () => void;
   onOpenHsk: () => void;
   onOpenBasicChinese: () => void;
-  onOpenTraditionalChinese: () => void; // 👈 Đã thêm prop mở modal Tiếng Trung Phồn Thể
+  onOpenTraditionalChinese: () => void;
+  onOpenEnglish: () => void;
 }
 
 export function LearningButtons({
@@ -12,6 +13,7 @@ export function LearningButtons({
   onOpenHsk,
   onOpenBasicChinese,
   onOpenTraditionalChinese,
+  onOpenEnglish,
 }: ButtonsProps) {
   return (
     <>
@@ -97,6 +99,23 @@ export function LearningButtons({
             </div>
           </div>
           <span className="text-amber-200 group-hover:translate-x-1 transition-transform font-bold text-sm">→</span>
+        </button>
+      </div>
+
+      {/* 🇬🇧 NÚT TIẾNG ANH CEFR (A1 - C2) */}
+      <div className="w-full flex-shrink-0">
+        <button
+          onClick={onOpenEnglish}
+          className="w-full bg-sky-600 hover:bg-sky-700 text-white py-3.5 px-4 rounded-2xl shadow-md active:scale-[0.98] transition-all flex items-center justify-between group cursor-pointer"
+        >
+          <div className="flex items-center space-x-3">
+            <span className="text-lg">🇬🇧</span>
+            <div className="text-left">
+              <p className="text-xs font-extrabold">Học Tiếng Anh CEFR</p>
+              <p className="text-[10px] text-sky-100 font-medium">Bấm để chọn cấp độ từ A1 đến C2</p>
+            </div>
+          </div>
+          <span className="text-sky-200 group-hover:translate-x-1 transition-transform font-bold text-sm">→</span>
         </button>
       </div>
     </>

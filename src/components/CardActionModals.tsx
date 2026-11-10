@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 
 interface CardActionModalsProps {
   currentCard: any;
-  cardType: 'kanji' | 'grammar' | 'hsk' | 'basic_chinese';
+  cardType: 'kanji' | 'grammar' | 'hsk' | 'basic_chinese' | 'traditional_chinese' | 'english';
   userId?: string;
   isReportModalOpen: boolean;
   setIsReportModalOpen: (val: boolean) => void;
@@ -62,8 +62,18 @@ export function CardActionModals({
         pinyin: currentCard.pinyin || currentCard.ja_writing || '',
         vi_meaning: currentCard.vi_meaning || '',
       });
+    } else if (cardType === 'english') {
+      // 🇬🇧 Tiếng Anh CEFR
+      setEditFormData({
+        word: currentCard.word || '',
+        ipa: currentCard.ipa || '',
+        word_type: currentCard.word_type || '',
+        vi_meaning: currentCard.vi_meaning || '',
+        example_en: currentCard.example_en || '',
+        example_vi: currentCard.example_vi || '',
+      });
     } else {
-      // Basic Chinese (Tiếng Trung Cơ Bản)
+      // Basic & Traditional Chinese
       setEditFormData({
         hanzi: currentCard.hanzi || '',
         pinyin: currentCard.pinyin || '',
@@ -152,7 +162,7 @@ export function CardActionModals({
             </h3>
             <p className="text-xs text-slate-500 font-medium">
               Mã thẻ: <strong className="text-slate-800">{currentCard?.card_id}</strong> (
-              {currentCard?.kanji || currentCard?.grammar_point || currentCard?.hanzi})
+              {currentCard?.kanji || currentCard?.grammar_point || currentCard?.hanzi || currentCard?.word})
             </p>
 
             <form onSubmit={handleReportSubmit} className="space-y-3">
@@ -164,7 +174,7 @@ export function CardActionModals({
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 bg-white outline-none cursor-pointer"
                 >
                   <option value="meaning">Sai nghĩa Tiếng Việt</option>
-                  <option value="reading">Sai phiên âm / Cách đọc (Pinyin/Hiragana)</option>
+                  <option value="reading">Sai phiên âm / Cách đọc (IPA/Pinyin/Hiragana)</option>
                   <option value="han_viet">Sai âm Hán Việt</option>
                   <option value="example">Lỗi ví dụ minh họa / Cấu trúc</option>
                   <option value="other">Lỗi khác</option>
@@ -386,8 +396,77 @@ export function CardActionModals({
                 </>
               )}
 
-              {/* 🏮 FORM 4: TIẾNG TRUNG CƠ BẢN (BASIC CHINESE - ĐẦY ĐỦ TRƯỜNG) */}
-              {cardType === 'basic_chinese' && (
+              {/* 🇬🇧 FORM 4: TIẾNG ANH CEFR */}
+              {cardType === 'english' && (
+                <>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">Từ vựng (Word)</label>
+                      <input
+                        type="text"
+                        value={editFormData.word || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, word: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-sans font-bold text-slate-900 outline-none bg-white"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">Phiên âm IPA</label>
+                      <input
+                        type="text"
+                        value={editFormData.ipa || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, ipa: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono font-bold text-slate-900 outline-none bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">Loại từ (n., v., adj., ...)</label>
+                      <input
+                        type="text"
+                        value={editFormData.word_type || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, word_type: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 outline-none bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">Nghĩa Tiếng Việt</label>
+                      <input
+                        type="text"
+                        value={editFormData.vi_meaning || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, vi_meaning: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 outline-none bg-white"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Ví dụ Tiếng Anh</label>
+                    <textarea
+                      value={editFormData.example_en || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, example_en: e.target.value })}
+                      rows={2}
+                      className="w-full p-2.5 rounded-xl border border-slate-300 text-xs font-sans text-slate-900 outline-none bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Dịch nghĩa ví dụ (Tiếng Việt)</label>
+                    <textarea
+                      value={editFormData.example_vi || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, example_vi: e.target.value })}
+                      rows={2}
+                      className="w-full p-2.5 rounded-xl border border-slate-300 text-xs text-slate-900 outline-none bg-white"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* 🏮 FORM 5: TIẾNG TRUNG CƠ BẢN & PHỒN THỂ */}
+              {(cardType === 'basic_chinese' || cardType === 'traditional_chinese') && (
                 <>
                   <div className="grid grid-cols-2 gap-2.5">
                     <div>

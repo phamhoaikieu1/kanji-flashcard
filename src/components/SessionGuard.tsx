@@ -14,9 +14,14 @@ export default function SessionGuard({ children }: { children: React.ReactNode }
       const { data: { session } } = await supabase.auth.getSession();
       
       const isAuthPage = pathname === '/login' || pathname === '/register';
-      
+      const isPublicPage =
+        pathname === '/' ||
+        pathname.startsWith('/room') ||
+        isAuthPage ||
+        pathname === '/reset-password';
+
       // Luồng kiểm tra điều hướng thông minh cho PWA
-      if (!session && !isAuthPage) {
+      if (!session && !isPublicPage) {
         router.push('/login');
       } else if (session && isAuthPage) {
         router.push('/dashboard');
@@ -29,9 +34,15 @@ export default function SessionGuard({ children }: { children: React.ReactNode }
 
     // Lắng nghe sự kiện Auth thay đổi (Tránh chết session khi app chạy ngầm trên iOS)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      const isAuthPage = window.location.pathname === '/login' || window.location.pathname === '/register';
-      
-      if (event === 'SIGNED_OUT') {
+      const currentPath = window.location.pathname;
+      const isAuthPage = currentPath === '/login' || currentPath === '/register';
+      const isPublicPage =
+        currentPath === '/' ||
+        currentPath.startsWith('/room') ||
+        isAuthPage ||
+        currentPath === '/reset-password';
+
+      if (event === 'SIGNED_OUT' && !isPublicPage) {
         router.push('/login');
       } else if (event === 'SIGNED_IN' && isAuthPage) {
         router.push('/dashboard');

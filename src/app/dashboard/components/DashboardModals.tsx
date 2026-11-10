@@ -9,6 +9,7 @@ interface ModalsProps {
   hskLevels: any[];
   basicChineseLevels: any[];
   traditionalChineseLevels: any[];
+  englishLevels?: any[];
   isLevelModalOpen: boolean;
   setIsLevelModalOpen: (val: boolean) => void;
   isGrammarModalOpen: boolean;
@@ -19,6 +20,8 @@ interface ModalsProps {
   setIsBasicChineseModalOpen: (val: boolean) => void;
   isTraditionalChineseModalOpen: boolean;
   setIsTraditionalChineseModalOpen: (val: boolean) => void;
+  isEnglishModalOpen?: boolean;
+  setIsEnglishModalOpen?: (val: boolean) => void;
   selectedProfile: any;
   setSelectedProfile: (val: any) => void;
   totalSystemCards: number;
@@ -34,6 +37,7 @@ export function DashboardModals({
   hskLevels,
   basicChineseLevels,
   traditionalChineseLevels,
+  englishLevels,
   isLevelModalOpen,
   setIsLevelModalOpen,
   isGrammarModalOpen,
@@ -44,6 +48,8 @@ export function DashboardModals({
   setIsBasicChineseModalOpen,
   isTraditionalChineseModalOpen,
   setIsTraditionalChineseModalOpen,
+  isEnglishModalOpen,
+  setIsEnglishModalOpen,
   selectedProfile,
   setSelectedProfile,
   totalSystemCards,
@@ -384,7 +390,66 @@ export function DashboardModals({
         )}
       </AnimatePresence>
 
-      {/* 🚀 POPUP 6: XEM PROFILE CHÉO & QUẢN TRỊ TƯƠNG TÁC */}
+      {/* 🇬🇧 POPUP 6: CHỌN TRÌNH ĐỘ TIẾNG ANH CEFR (A1 - C2) */}
+      <AnimatePresence>
+        {isEnglishModalOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsEnglishModalOpen && setIsEnglishModalOpen(false)}
+              className="fixed inset-0 bg-slate-900/40 z-40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-[2rem] p-6 shadow-2xl max-w-md mx-auto border-t border-slate-100 max-h-[85vh] flex flex-col"
+            >
+              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4 flex-shrink-0" />
+              <div className="text-center mb-4 flex-shrink-0">
+                <h3 className="text-base font-black text-slate-800">🇬🇧 Chọn Cấp Độ Tiếng Anh CEFR</h3>
+                <p className="text-xs text-slate-400 font-medium mt-1">Hôm nay bạn muốn học Tiếng Anh cấp độ nào?</p>
+              </div>
+
+              <div className="w-full flex flex-col space-y-2 mb-4 overflow-y-auto no-scrollbar pr-0.5">
+                {englishLevels?.map((lvl) => (
+                  <button
+                    key={lvl.code}
+                    onClick={() => {
+                      if (setIsEnglishModalOpen) setIsEnglishModalOpen(false);
+                      toast.success(`Đang mở Tiếng Anh ${lvl.code}...`);
+                      router.push(`/english-cefr?level=${lvl.code}`);
+                    }}
+                    className="w-full bg-slate-50 hover:bg-sky-50 hover:border-sky-100 py-3 px-4 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.98] transition-all flex items-center justify-between text-left group cursor-pointer"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-slate-700 group-hover:text-sky-600 transition-colors">
+                        {lvl.label}
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">{lvl.equiv}</p>
+                    </div>
+                    <span className="text-slate-300 group-hover:text-sky-500 transition-colors font-bold text-xs">
+                      Học ngay →
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setIsEnglishModalOpen && setIsEnglishModalOpen(false)}
+                className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl text-xs font-bold active:scale-95 transition-all hover:bg-slate-200 flex-shrink-0 cursor-pointer"
+              >
+                Đóng
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* 🚀 POPUP 7: XEM PROFILE CHÉO & QUẢN TRỊ TƯƠNG TÁC */}
       <AnimatePresence>
         {selectedProfile && (
           <>

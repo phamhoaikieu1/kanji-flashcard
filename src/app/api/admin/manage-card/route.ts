@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://kmaifmhbipuxabsgvyxm.supabase.co/',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImttYWlmbWhiaXB1eGFic2d2eXhtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDQ3ODA0NiwiZXhwIjoyMTAwMDU0MDQ2fQ.fHAHPXVA9F9eEB64Gi5iDtalBEFQWCKLpxJVmeFnMGI',
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
   {
     auth: {
       autoRefreshToken: false,
@@ -17,15 +17,72 @@ const TABLE_MAP: { [key: string]: string } = {
   grammar: 'grammar_cards',
   hsk: 'hsk_vocab',
   basic_chinese: 'basic_chinese_vocab',
+  traditional_chinese: 'traditional_chinese_vocab',
+  english: 'english_vocab_cards',
 };
+
+// Hàm hỗ trợ lấy Token và xác thực người dùng từ Authorization Header hoặc Cookie
+async function getAuthenticatedUser(req: Request) {
+  try {
+    let token: string | null = null;
+
+    // 1. Lấy token từ header Authorization (Bearer <token>)
+    const authHeader = req.headers.get('authorization');
+    if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
+      token = authHeader.substring(7).trim();
+    }
+
+    // 2. Nếu không có header, tìm token trong Cookie
+    if (!token) {
+      const cookieHeader = req.headers.get('cookie');
+      if (cookieHeader) {
+        const cookies = Object.fromEntries(
+          cookieHeader.split(';').map((c) => {
+            const [key, ...v] = c.trim().split('=');
+            return [key.trim(), v.join('=')];
+          })
+        );
+
+        token = cookies['sb-access-token'] || cookies['sb-auth-token'] || null;
+
+        if (!token) {
+          const sbCookieKey = Object.keys(cookies).find(
+            (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
+          );
+          if (sbCookieKey) {
+            try {
+              const parsed = JSON.parse(decodeURIComponent(cookies[sbCookieKey]));
+              token = parsed.access_token || parsed[0] || null;
+            } catch {
+              token = cookies[sbCookieKey];
+            }
+          }
+        }
+      }
+    }
+
+    if (!token) return null;
+
+    // Xác thực token thông qua Supabase Auth API
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    if (error || !user) return null;
+
+    return user;
+  } catch {
+    return null;
+  }
+}
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { 
-      action, requestingUserId, cardId, cardType, cardData,
+      action, cardId, cardType, cardData,
       reportType, description, reportId, reportStatus
     } = body;
+
+    // Lấy thông tin user đã đăng nhập thực sự từ Supabase Auth
+    const user = await getAuthenticatedUser(req);
 
     // ------------------- ACTION 1: BÁO CÁO THẺ LỖI -------------------
     if (action === 'CREATE_REPORT') {
@@ -34,7 +91,7 @@ export async function POST(req: Request) {
       }
 
       const { error } = await supabaseAdmin.from('card_reports').insert([{
-        user_id: requestingUserId || null,
+        user_id: user ? user.id : null,
         card_id: cardId,
         card_type: cardType,
         report_type: reportType,
@@ -46,11 +103,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, message: 'Đã gửi báo cáo lỗi thành công!' });
     }
 
-    // --- KIỂM TRA QUYỀN ADMIN/OWNER ---
+    // --- KIỂM TRA XÁC THỰC NGƯỜI DÙNG & QUYỀN ADMIN/OWNER ---
+    if (!user) {
+      return NextResponse.json({ error: 'Phiên làm việc hết hạn hoặc chưa đăng nhập!' }, { status: 401 });
+    }
+
     const { data: requestingProfile, error: profileErr } = await supabaseAdmin
       .from('profiles')
       .select('role')
-      .eq('id', requestingUserId)
+      .eq('id', user.id)
       .single();
 
     if (profileErr || !requestingProfile || !['admin', 'owner'].includes(requestingProfile.role)) {
