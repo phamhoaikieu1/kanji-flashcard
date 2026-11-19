@@ -21,6 +21,21 @@ export interface RoomFile {
   deleted_at?: string | null;
 }
 
+export interface RoomMessage {
+  id: string;
+  room_id: string;
+  room_code: string;
+  sender_type?: string;
+  content: string;
+  message_type: 'text' | 'link' | 'code';
+  created_at: string;
+  expires_at: string;
+}
+
+export type StreamItem =
+  | { kind: 'file'; item: RoomFile }
+  | { kind: 'message'; item: RoomMessage };
+
 // Giới hạn dung lượng upload (mặc định 50MB, có thể cấu hình qua biến môi trường)
 export const MAX_FILE_SIZE_MB = Number(process.env.NEXT_PUBLIC_MAX_FILE_SIZE_MB) || 50;
 export const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -130,4 +145,45 @@ export function formatShortDateTime(dateStr: string): string {
   } catch {
     return dateStr;
   }
+}
+
+// Kiểm tra xem file có phải là file ảnh xem nhanh được không
+export function isImageFile(fileName: string, mimeType?: string): boolean {
+  if (mimeType && mimeType.startsWith('image/')) return true;
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.ico'];
+  const lower = fileName.toLowerCase();
+  return imageExtensions.some((ext) => lower.endsWith(ext));
+}
+
+// Kiểm tra xem file có thể xem nội dung dạng văn bản / code (UTF-8) không
+export function isTextPreviewable(fileName: string, mimeType?: string): boolean {
+  if (mimeType) {
+    if (
+      mimeType.startsWith('text/') ||
+      mimeType === 'application/json' ||
+      mimeType === 'application/javascript' ||
+      mimeType === 'application/xml'
+    ) {
+      return true;
+    }
+  }
+  const textExtensions = [
+    '.txt', '.md', '.json', '.js', '.ts', '.jsx', '.tsx', '.css', '.scss',
+    '.html', '.xml', '.csv', '.log', '.env', '.yaml', '.yml', '.sql', '.py',
+    '.java', '.c', '.cpp', '.h', '.sh', '.bat', '.ps1'
+  ];
+  const lower = fileName.toLowerCase();
+  return textExtensions.some((ext) => lower.endsWith(ext));
+}
+
+// Nhận diện kiểu tin nhắn: 'link' | 'code' | 'text'
+export function detectMessageType(text: string): 'link' | 'code' | 'text' {
+  const trimmed = text.trim();
+  if (/^https?:\/\/[^\s]+$/i.test(trimmed)) {
+    return 'link';
+  }
+  if (trimmed.includes('\n') && (trimmed.startsWith('```') || /^(const|let|var|function|import|export|class|def|public|SELECT|UPDATE|INSERT)\b/m.test(trimmed))) {
+    return 'code';
+  }
+  return 'text';
 }
