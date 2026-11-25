@@ -176,6 +176,23 @@ export function isTextPreviewable(fileName: string, mimeType?: string): boolean 
   return textExtensions.some((ext) => lower.endsWith(ext));
 }
 
+// Kiểm tra nội dung có phải là văn bản dạng bảng / cột (chứa ký tự Tab hoặc định dạng bảng Markdown / ASCII)
+export function isTableContent(text: string): boolean {
+  if (!text) return false;
+  // Chứa ký tự Tab (đặc trưng từ Excel, Sheets, TSV, log phân cột)
+  if (text.includes('\t')) return true;
+
+  // Bảng dạng Markdown hoặc ASCII (có ít nhất 2 dòng, chứa dấu gạch đứng | phân tách cột hoặc separator |---|)
+  const lines = text.trim().split('\n');
+  if (lines.length >= 2) {
+    const hasMarkdownTablePipe = lines.filter((l) => /^\s*\|.+\|\s*$/.test(l)).length >= 2;
+    const hasTableSeparator = lines.some((l) => /^\s*\|?(\s*:?-+:?\s*\|)+\s*:?-+:?\s*\|?\s*$/.test(l));
+    if (hasMarkdownTablePipe || hasTableSeparator) return true;
+  }
+
+  return false;
+}
+
 // Nhận diện kiểu tin nhắn: 'link' | 'code' | 'text'
 export function detectMessageType(text: string): 'link' | 'code' | 'text' {
   const trimmed = text.trim();

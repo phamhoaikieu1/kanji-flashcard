@@ -15,6 +15,7 @@ import {
   formatShortDateTime,
   isImageFile,
   isTextPreviewable,
+  isTableContent,
   detectMessageType,
   MAX_FILE_SIZE_BYTES,
   MAX_FILE_SIZE_MB,
@@ -903,6 +904,9 @@ export default function DropzoneRoomPage() {
             <span className="bg-indigo-600 text-white text-[10px] px-1.5 py-0.2 rounded-full">
               {files.length}
             </span>
+            {trashFiles.length > 0 && (
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" title="Có file trong thùng rác" />
+            )}
           </button>
 
           <button
@@ -956,10 +960,16 @@ export default function DropzoneRoomPage() {
                     const msg = item.item;
                     const isLink = msg.message_type === 'link';
                     const isCode = msg.message_type === 'code';
+                    const isTable = isTableContent(msg.content);
 
                     return (
-                      <div key={msg.id} className="flex flex-col items-start space-y-1 max-w-[90%] sm:max-w-[75%]">
-                        <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3 sm:p-3.5 shadow-2xs text-slate-800 text-xs sm:text-sm group relative">
+                      <div
+                        key={msg.id}
+                        className={`flex flex-col items-start space-y-1 ${
+                          isTable || isCode ? 'w-full max-w-[96%] sm:max-w-[85%]' : 'max-w-[90%] sm:max-w-[75%]'
+                        }`}
+                      >
+                        <div className="w-full bg-slate-50 border border-slate-200/90 rounded-2xl p-3 sm:p-3.5 shadow-2xs text-slate-800 text-xs sm:text-sm group relative">
                           
                           {/* Nút Copy 1 chạm nổi bật */}
                           <button
@@ -967,7 +977,7 @@ export default function DropzoneRoomPage() {
                               navigator.clipboard.writeText(msg.content);
                               toast.success('Đã sao chép nội dung!');
                             }}
-                            className="absolute top-2 right-2 p-1 text-slate-400 hover:text-indigo-600 hover:bg-slate-200/70 rounded transition"
+                            className="absolute top-2 right-2 p-1 text-slate-400 hover:text-indigo-600 hover:bg-slate-200/70 rounded transition z-10"
                             title="Sao chép nội dung"
                           >
                             📋
@@ -988,6 +998,13 @@ export default function DropzoneRoomPage() {
                               <pre className="font-mono text-xs bg-slate-900 text-slate-100 p-3 rounded-xl overflow-x-auto whitespace-pre-wrap select-text">
                                 {msg.content}
                               </pre>
+                            ) : isTable ? (
+                              <pre
+                                className="font-mono text-xs bg-slate-900/95 text-slate-100 p-3 sm:p-3.5 rounded-xl overflow-x-auto whitespace-pre select-text leading-relaxed border border-slate-800 shadow-inner"
+                                style={{ tabSize: 4 }}
+                              >
+                                {msg.content}
+                              </pre>
                             ) : (
                               <p className="whitespace-pre-wrap break-words select-text leading-relaxed">
                                 {msg.content}
@@ -997,7 +1014,9 @@ export default function DropzoneRoomPage() {
 
                           <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-200/40">
                             <span>⏱ {formatShortDateTime(msg.created_at)}</span>
-                            <span className="text-indigo-500 font-medium">Text</span>
+                            <span className="text-indigo-500 font-medium">
+                              {isTable ? '📊 Bảng / Cột' : isCode ? '💻 Code' : isLink ? '🔗 Link' : '💬 Text'}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -1357,13 +1376,15 @@ export default function DropzoneRoomPage() {
             onClick={() => setIsMobileDrawerOpen(false)}
             className="fixed inset-0 bg-black/40 backdrop-blur-xs"
           />
-          <div className="relative bg-white rounded-t-3xl max-h-[80vh] flex flex-col shadow-2xl z-50 overflow-hidden animate-in slide-in-from-bottom duration-200">
+          <div className="relative bg-white rounded-t-3xl max-h-[85vh] flex flex-col shadow-2xl z-50 overflow-hidden animate-in slide-in-from-bottom duration-200">
             
+            {/* Drag Handle cho Mobile */}
+            <div className="w-10 h-1 bg-slate-300 rounded-full mx-auto my-2" />
+
             {/* Header Drawer */}
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="font-extrabold text-sm text-slate-900">Quản lý Kho File & QR</span>
-                <span className="text-xs text-slate-400">({files.length} file)</span>
               </div>
               <button
                 onClick={() => setIsMobileDrawerOpen(false)}
@@ -1373,51 +1394,160 @@ export default function DropzoneRoomPage() {
               </button>
             </div>
 
+            {/* Tab Navigation trên Mobile Drawer */}
+            <div className="border-b border-slate-100 px-4 pt-1 flex items-center justify-between bg-slate-50/50 flex-shrink-0">
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={() => setFileHubTab('files')}
+                  className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition ${
+                    fileHubTab === 'files'
+                      ? 'border-indigo-600 text-indigo-600'
+                      : 'border-transparent text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  <span>Kho File</span>
+                  <span className="ml-1 text-[10px] px-1.5 py-0.2 bg-slate-200/70 text-slate-600 rounded-full">
+                    {files.length}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setFileHubTab('trash')}
+                  className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition ${
+                    fileHubTab === 'trash'
+                      ? 'border-indigo-600 text-indigo-600'
+                      : 'border-transparent text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  <span>Thùng rác</span>
+                  <span
+                    className={`ml-1 text-[10px] px-1.5 py-0.2 rounded-full ${
+                      trashFiles.length > 0
+                        ? 'bg-amber-100 text-amber-700 font-bold'
+                        : 'bg-slate-200/70 text-slate-600'
+                    }`}
+                  >
+                    {trashFiles.length}
+                  </span>
+                </button>
+              </div>
+
+              {fileHubTab === 'trash' && trashFiles.length > 0 && (
+                <button
+                  onClick={handleEmptyTrash}
+                  className="text-xs font-bold text-rose-600 hover:underline pb-2 px-1"
+                >
+                  Dọn sạch
+                </button>
+              )}
+            </div>
+
             {/* Nội dung Drawer */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               
               {/* QR Code trên mobile */}
               <div className="text-center bg-slate-50 p-3 rounded-2xl border border-slate-200/60 space-y-2">
-                <div className="p-2 bg-white rounded-xl inline-block mx-auto border border-slate-200">
-                  {fullRoomUrl && <QRCodeSVG value={fullRoomUrl} size={110} level="M" />}
+                <div className="p-2 bg-white rounded-xl inline-block mx-auto border border-slate-200 shadow-2xs">
+                  {fullRoomUrl && <QRCodeSVG value={fullRoomUrl} size={105} level="M" />}
                 </div>
-                <p className="text-[11px] text-slate-500">Mã phòng: <strong className="font-mono">{roomCode}</strong></p>
+                <div className="space-y-0.5">
+                  <p className="text-xs font-bold text-slate-800">Quét camera điện thoại để vào</p>
+                  <p className="text-[11px] text-slate-400 font-mono">Mã phòng: <strong className="text-slate-700">{roomCode}</strong></p>
+                </div>
               </div>
 
-              {/* Danh sách file */}
+              {/* Danh sách file theo Tab */}
               <div className="space-y-2">
-                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Danh sách file</h4>
-                {files.length === 0 ? (
-                  <p className="text-xs text-slate-400 text-center py-4">Chưa có file nào trong phòng</p>
-                ) : (
-                  files.map((file) => (
-                    <div
-                      key={file.id}
-                      className="p-3 bg-slate-50 rounded-xl border border-slate-200/70 flex items-center justify-between gap-2"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-slate-800 truncate">{file.file_name}</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">{formatFileSize(file.file_size)}</p>
-                      </div>
-                      <div className="flex items-center space-x-1.5">
-                        <button
-                          onClick={() => handleDirectDownload(file)}
-                          className="px-2.5 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold"
-                        >
-                          Tải về
-                        </button>
-                        <button
-                          onClick={() => handleMoveToTrash(file)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600"
-                        >
-                          🗑
-                        </button>
-                      </div>
+                {fileHubTab === 'files' ? (
+                  files.length === 0 ? (
+                    <div className="text-center py-8 text-slate-400 space-y-1">
+                      <p className="text-xs font-medium">Chưa có file nào trong phòng</p>
+                      <p className="text-[11px] text-slate-400">Dùng nút kẹp ghim (📎) bên dưới để tải lên</p>
                     </div>
-                  ))
+                  ) : (
+                    files.map((file) => {
+                      const timerInfo = formatTimeLeft(file.expires_at);
+                      return (
+                        <div
+                          key={file.id}
+                          className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/70 flex items-center justify-between gap-2"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-800 truncate" title={file.file_name}>
+                              {file.file_name}
+                            </p>
+                            <div className="flex items-center space-x-1.5 text-[10px] text-slate-400 mt-0.5">
+                              <span>{formatFileSize(file.file_size)}</span>
+                              <span>•</span>
+                              <span className="text-indigo-600 font-bold font-mono">⏱ {timerInfo.text}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-1.5 flex-shrink-0">
+                            <button
+                              onClick={() => handleDirectDownload(file)}
+                              className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold active:scale-95 transition shadow-2xs"
+                              title="Tải về"
+                            >
+                              📥 Tải về
+                            </button>
+                            <button
+                              onClick={() => handleMoveToTrash(file)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                              title="Chuyển vào thùng rác"
+                            >
+                              🗑
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )
+                ) : trashFiles.length === 0 ? (
+                  <div className="text-center py-8 text-slate-400 space-y-1">
+                    <p className="text-xs font-medium">Thùng rác trống</p>
+                    <p className="text-[11px] text-slate-400">File xóa/hết hạn sẽ lưu ở đây 30 ngày</p>
+                  </div>
+                ) : (
+                  trashFiles.map((file) => {
+                    const trashExpiry = formatTrashExpiry(file.deleted_at);
+                    return (
+                      <div
+                        key={file.id}
+                        className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/70 flex items-center justify-between gap-2"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-800 truncate line-through decoration-slate-300">
+                            {file.file_name}
+                          </p>
+                          <p className="text-[10px] text-amber-700 mt-0.5">{trashExpiry.text}</p>
+                        </div>
+                        <div className="flex items-center space-x-1.5 flex-shrink-0">
+                          <button
+                            onClick={() => handleRestoreFile(file)}
+                            className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg transition active:scale-95"
+                            title="Khôi phục"
+                          >
+                            Khôi phục
+                          </button>
+                          <button
+                            onClick={() => handlePermanentDelete(file)}
+                            className="p-1.5 text-rose-500 hover:bg-rose-50 text-xs rounded-lg transition"
+                            title="Xóa vĩnh viễn"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
                 )}
               </div>
 
+            </div>
+
+            {/* Footer Drawer */}
+            <div className="p-3 bg-slate-50 text-[11px] text-slate-500 border-t border-slate-100 text-center flex-shrink-0">
+              💡 File tự hủy sau 15 phút. File trong thùng rác tự hủy sau 30 ngày.
             </div>
 
           </div>
