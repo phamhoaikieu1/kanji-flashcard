@@ -1,5 +1,7 @@
 'use client';
 
+import { lockScreen } from '@/utils/deviceManager';
+
 interface HeaderProps {
   displayName: string;
   email: string;
@@ -59,6 +61,15 @@ export function DashboardHeader({
             <span className="hidden md:inline">Quản trị</span>
           </button>
         )}
+
+        <button
+          type="button"
+          onClick={() => lockScreen()}
+          className="p-2.5 rounded-xl border transition-all active:scale-95 bg-amber-50 border-amber-100 text-amber-700 hover:bg-amber-100 flex-shrink-0 font-bold text-xs flex items-center gap-1"
+          title="Khóa màn hình"
+        >
+          <span>🔒</span>
+        </button>
 
         <button 
           onClick={onOpenSettings}

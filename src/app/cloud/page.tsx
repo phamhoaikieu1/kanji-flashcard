@@ -6,6 +6,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/utils/supabase';
+import { lockScreen } from '@/utils/deviceManager';
 import {
   formatFileSize,
   formatTrashExpiry,
@@ -1242,6 +1243,17 @@ export default function NobiCloudPage() {
         </div>
 
         <div className="flex items-center space-x-2">
+          {/* Nút khóa nhanh màn hình */}
+          <button
+            type="button"
+            onClick={() => lockScreen()}
+            className="flex items-center space-x-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/80 rounded-xl text-xs font-bold transition active:scale-95"
+            title="Khóa màn hình"
+          >
+            <span>🔒</span>
+            <span className="hidden sm:inline">Khóa màn hình</span>
+          </button>
+
           {/* Avatar Người dùng */}
           <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-xl">
             <div className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center text-[11px] font-black overflow-hidden flex-shrink-0">

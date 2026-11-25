@@ -1,9 +1,36 @@
 'use client';
 
 import { supabase } from '@/utils/supabase';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
+import { getOrCreateDeviceId, lockScreen } from '@/utils/deviceManager';
+
+interface UserDeviceRow {
+  id: string;
+  user_id: string;
+  device_id: string;
+  device_name: string;
+  status: string;
+  last_active_at: string;
+}
+
+function formatLastActive(isoString: string): string {
+  if (!isoString) return '';
+  const diffMs = Date.now() - new Date(isoString).getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  if (diffMin < 1) return 'Vừa xong';
+  if (diffMin < 60) return `${diffMin} phút trước`;
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 24) return `${diffHours} giờ trước`;
+  return new Date(isoString).toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -20,6 +47,19 @@ export default function SettingsPage() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string>('');
+
+  // Device OTP state
+  const [otpCode, setOtpCode] = useState<string | null>(null);
+  const [otpSecondsLeft, setOtpSecondsLeft] = useState<number>(0);
+  const [otpExpired, setOtpExpired] = useState(false);
+  const [generatingOtp, setGeneratingOtp] = useState(false);
+
+  // Device management state
+  const [devices, setDevices] = useState<UserDeviceRow[]>([]);
+  const [loadingDevices, setLoadingDevices] = useState(false);
+  const [revokingDeviceId, setRevokingDeviceId] = useState<string | null>(null);
+  const [revokingAllOther, setRevokingAllOther] = useState(false);
+  const currentDeviceId = typeof window !== 'undefined' ? getOrCreateDeviceId() : '';
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -185,10 +225,143 @@ export default function SettingsPage() {
     }
   };
 
+  const fetchDevices = useCallback(async (userId: string) => {
+    setLoadingDevices(true);
+    try {
+      const { data, error } = await supabase
+        .from('user_devices')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .order('last_active_at', { ascending: false });
+
+      if (error) throw error;
+
+      const list = (data || []) as UserDeviceRow[];
+      const localDeviceId = getOrCreateDeviceId();
+      list.sort((a, b) => {
+        if (a.device_id === localDeviceId && b.device_id !== localDeviceId) return -1;
+        if (b.device_id === localDeviceId && a.device_id !== localDeviceId) return 1;
+        return 0;
+      });
+      setDevices(list);
+    } catch {
+      // Table might not exist yet or transient error
+    } finally {
+      setLoadingDevices(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchDevices(user.id);
+    }
+  }, [user?.id, fetchDevices]);
+
+  const handleRevokeDevice = async (targetDevice: UserDeviceRow) => {
+    if (!user?.id) return;
+    setRevokingDeviceId(targetDevice.device_id);
+    try {
+      const { error } = await supabase
+        .from('user_devices')
+        .update({ status: 'revoked' })
+        .eq('user_id', user.id)
+        .eq('device_id', targetDevice.device_id);
+
+      if (error) throw error;
+
+      setDevices((prev) => prev.filter((d) => d.device_id !== targetDevice.device_id));
+      toast.success(`Đã đăng xuất "${targetDevice.device_name}"!`);
+    } catch (error: any) {
+      toast.error(error?.message || 'Không thể đăng xuất thiết bị này!');
+    } finally {
+      setRevokingDeviceId(null);
+    }
+  };
+
+  const handleRevokeAllOtherDevices = async () => {
+    if (!user?.id) return;
+    setRevokingAllOther(true);
+    try {
+      const localDeviceId = getOrCreateDeviceId();
+      const { error } = await supabase
+        .from('user_devices')
+        .update({ status: 'revoked' })
+        .eq('user_id', user.id)
+        .neq('device_id', localDeviceId)
+        .eq('status', 'active');
+
+      if (error) throw error;
+
+      setDevices((prev) => prev.filter((d) => d.device_id === localDeviceId));
+      toast.success('Đã đăng xuất tất cả thiết bị khác!');
+    } catch (error: any) {
+      toast.error(error?.message || 'Không thể đăng xuất các thiết bị khác!');
+    } finally {
+      setRevokingAllOther(false);
+    }
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast.success('Đã đăng xuất tài khoản thành công!');
     router.push('/login');
+  };
+
+  useEffect(() => {
+    if (!otpCode || otpSecondsLeft <= 0) return;
+
+    const timer = setInterval(() => {
+      setOtpSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setOtpCode(null);
+          setOtpExpired(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [otpCode, otpSecondsLeft]);
+
+  const handleGenerateOtp = async () => {
+    setGeneratingOtp(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token || !session?.refresh_token) {
+        toast.error('Không tìm thấy phiên đăng nhập hợp lệ. Vui lòng đăng nhập lại!');
+        return;
+      }
+
+      const { data, error } = await supabase.rpc('generate_device_otp', {
+        p_session_payload: {
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+        },
+      });
+
+      if (error) throw error;
+
+      const generatedCode =
+        typeof data === 'string'
+          ? data
+          : data?.otp_code || data?.code || data?.otp || '';
+
+      if (!generatedCode) {
+        throw new Error(data?.message || 'Không thể tạo mã OTP!');
+      }
+
+      setOtpCode(String(generatedCode).trim());
+      setOtpSecondsLeft(60);
+      setOtpExpired(false);
+      toast.success('Đã tạo mã OTP đăng nhập!');
+    } catch (error: any) {
+      toast.error(error?.message || 'Lỗi tạo mã OTP!');
+    } finally {
+      setGeneratingOtp(false);
+    }
   };
 
   if (loading) {
@@ -337,6 +510,144 @@ export default function SettingsPage() {
           </div>
 
           <div className="w-full h-px bg-slate-100 my-2" />
+
+          {/* Đăng nhập thiết bị khác (Mã OTP 1 phút) */}
+          <div className="bg-indigo-50/70 border border-indigo-100 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-extrabold text-indigo-950 tracking-tight">
+                Đăng nhập thiết bị khác (Mã OTP 1 phút)
+              </h4>
+              {otpCode && otpSecondsLeft > 0 && (
+                <span className={`text-xs font-extrabold px-2 py-0.5 rounded-full ${otpSecondsLeft <= 10 ? 'bg-rose-100 text-rose-600' : 'bg-indigo-100 text-indigo-700'}`}>
+                  {otpSecondsLeft}s
+                </span>
+              )}
+            </div>
+
+            {otpCode && otpSecondsLeft > 0 ? (
+              <div className="space-y-2.5 text-center py-1">
+                <div className="flex items-center justify-center gap-1.5">
+                  {otpCode.slice(0, 6).split('').map((digit, idx) => (
+                    <span
+                      key={idx}
+                      className={`w-10 h-12 flex items-center justify-center bg-white border-2 border-indigo-200 rounded-xl text-2xl font-black font-mono text-indigo-700 shadow-xs ${idx === 2 ? 'mr-2' : ''}`}
+                    >
+                      {digit}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-[11px] font-semibold text-indigo-700">
+                  Nhập mã này trên thiết bị mới trong {otpSecondsLeft} giây
+                </p>
+              </div>
+            ) : otpExpired ? (
+              <div className="space-y-2.5 text-center py-1">
+                <p className="text-xs font-bold text-rose-600">Mã đã hết hạn</p>
+                <button
+                  type="button"
+                  onClick={handleGenerateOtp}
+                  disabled={generatingOtp}
+                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm active:scale-98 transition-all disabled:bg-indigo-300"
+                >
+                  {generatingOtp ? 'Đang tạo mã...' : '🔄 Lấy mã mới'}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleGenerateOtp}
+                disabled={generatingOtp}
+                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm active:scale-98 transition-all disabled:bg-indigo-300"
+              >
+                {generatingOtp ? 'Đang tạo mã...' : '🔑 Lấy mã đăng nhập (6 số)'}
+              </button>
+            )}
+
+            <p className="text-[10px] text-slate-500 font-medium text-center leading-relaxed">
+              Mã chỉ tồn tại 60 giây và tự hủy ngay sau 1 lần sử dụng.
+            </p>
+          </div>
+
+          {/* Quản lý thiết bị */}
+          <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-extrabold text-slate-800 tracking-tight">
+                Quản lý thiết bị ({devices.length})
+              </h4>
+              <button
+                type="button"
+                onClick={() => user?.id && fetchDevices(user.id)}
+                disabled={loadingDevices}
+                className="text-[11px] font-bold text-indigo-600 hover:underline disabled:text-slate-400"
+              >
+                {loadingDevices ? 'Đang tải...' : 'Làm mới'}
+              </button>
+            </div>
+
+            {loadingDevices && devices.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-2">Đang tải danh sách thiết bị...</p>
+            ) : devices.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-2">Chưa có dữ liệu thiết bị nào.</p>
+            ) : (
+              <div className="space-y-2">
+                {devices.map((dev) => {
+                  const isCurrent = dev.device_id === currentDeviceId;
+                  return (
+                    <div
+                      key={dev.device_id}
+                      className="flex items-center justify-between gap-2 bg-white border border-slate-200/80 rounded-xl px-3 py-2.5"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs font-bold text-slate-800 truncate">
+                            {dev.device_name || 'Thiết bị không xác định'}
+                          </span>
+                          {isCurrent && (
+                            <span className="bg-emerald-100 text-emerald-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                              Thiết bị này
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                          Hoạt động: {formatLastActive(dev.last_active_at)}
+                        </p>
+                      </div>
+
+                      {!isCurrent && (
+                        <button
+                          type="button"
+                          onClick={() => handleRevokeDevice(dev)}
+                          disabled={revokingDeviceId === dev.device_id}
+                          className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100 rounded-lg text-[11px] font-bold transition-all active:scale-95 disabled:opacity-50 flex-shrink-0"
+                        >
+                          {revokingDeviceId === dev.device_id ? 'Đang xử lý...' : 'Đăng xuất'}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {devices.some((d) => d.device_id !== currentDeviceId) && (
+              <button
+                type="button"
+                onClick={handleRevokeAllOtherDevices}
+                disabled={revokingAllOther}
+                className="w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/70 rounded-xl text-xs font-bold transition-all active:scale-98 disabled:opacity-50"
+              >
+                {revokingAllOther ? 'Đang đăng xuất...' : 'Đăng xuất tất cả thiết bị khác'}
+              </button>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => lockScreen()}
+            className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold active:scale-95 transition-all flex items-center justify-center space-x-1"
+          >
+            <span>🔒 Khóa màn hình ngay</span>
+          </button>
 
           <button
             onClick={handleLogout}
