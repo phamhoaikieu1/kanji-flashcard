@@ -50,8 +50,23 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* 💬 NÚT CHAT CỐ ĐỊNH */}
-      <div className="fixed bottom-12 right-5 z-30">
+      {/* 🚀 NÚT NỔI CỐ ĐỊNH GÓC DƯỚI BÊN PHẢI (NOBI CLOUD & CHAT) */}
+      <div className="fixed bottom-12 right-5 z-30 flex flex-col items-end space-y-2.5">
+        {/* ☁️ NÚT TRÒN NỔI NOBI CLOUD */}
+        <button
+          onClick={() => d.router.push('/cloud')}
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white p-3.5 rounded-full shadow-2xl active:scale-90 transition-all flex items-center justify-center border-2 border-white/20 group cursor-pointer"
+          title="Nobi Cloud"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z" />
+          </svg>
+          <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out font-bold text-xs pl-0 group-hover:pl-2">
+            Nobi Cloud
+          </span>
+        </button>
+
+        {/* 💬 NÚT CHAT */}
         <button
           onClick={() => d.router.push('/chat')}
           className="bg-indigo-600 hover:bg-indigo-700 text-white p-3.5 rounded-full shadow-2xl active:scale-90 transition-all flex items-center justify-center border-2 border-white/20 group cursor-pointer"

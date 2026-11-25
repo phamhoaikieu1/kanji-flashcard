@@ -15,10 +15,12 @@ export default function LoginPage() {
 
   // Tự động quét xem trước đó có phiên lưu cứng không để chuyển thẳng vào dashboard
   useEffect(() => {
+    const hasRedirectedRef = { current: false };
     const checkActiveSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        router.push('/dashboard');
+      const { data: { user } } = await supabase.auth.getUser(); // fresh check
+      if (user && !hasRedirectedRef.current) {
+        hasRedirectedRef.current = true;
+        router.replace('/dashboard');
       }
     };
     checkActiveSession();

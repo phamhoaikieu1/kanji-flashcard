@@ -24,31 +24,11 @@ export async function POST(req: Request) {
 async function handleCleanup(req: Request) {
   try {
     const now = new Date();
-    const nowIso = now.toISOString();
-
-    // 1. TỰ ĐỘNG CHUYỂN FILE HẾT HẠN (15 PHÚT) VÀO THÙNG RÁC (TRASH)
-    // Cả file bị người dùng xóa thủ công và file tự hết hạn đều phải chuyển vào thùng rác, không xóa vật lý ngay
-    const { data: expiredActiveFiles, error: expireError } = await supabaseAdmin
-      .from('room_files')
-      .update({
-        status: 'trash',
-        deleted_at: nowIso,
-      })
-      .eq('status', 'active')
-      .lte('expires_at', nowIso)
-      .select('id');
-
-    if (expireError) {
-      console.error('Error moving expired files to trash:', expireError);
-    }
-
-    const movedToTrashCount = expiredActiveFiles?.length || 0;
-
-    // 2. TÌM CÁC FILE CẦN XÓA VĨNH VIỄN:
-    // - File trong thùng rác đã quá 30 ngày (deleted_at <= now - 30 days)
-    // - File có status = 'pending_delete' (người dùng bấm xóa vĩnh viễn hoặc dọn sạch thùng rác)
     const thirtyDaysAgoIso = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
+    // 1. TÌM VÀ XÓA VĨNH VIỄN CÁC FILE TRONG THÙNG RÁC:
+    // - File có status = 'pending_delete'
+    // - File có status = 'trash' và deleted_at <= 30 ngày trước
     const { data: filesToPurge, error: purgeFetchError } = await supabaseAdmin
       .from('room_files')
       .select('id, storage_path, room_id, status, deleted_at')
@@ -57,17 +37,11 @@ async function handleCleanup(req: Request) {
 
     if (purgeFetchError) {
       console.error('Error fetching files to purge:', purgeFetchError);
-      return NextResponse.json({
-        movedToTrash: movedToTrashCount,
-        error: purgeFetchError.message,
-      }, { status: 500 });
     }
 
-    let purgedCount = 0;
-    const errors: Array<{ id: string; error: string }> = [];
+    let purgedFilesCount = 0;
+    const fileErrors: Array<{ id: string; error: string }> = [];
 
-    // 3. Xử lý xóa vĩnh viễn tin cậy: Xóa file khỏi Storage -> Xóa metadata DB
-    // Nếu xóa Storage lỗi, giữ status = 'pending_delete' để hệ thống tự động retry lần sau
     if (filesToPurge && filesToPurge.length > 0) {
       for (const file of filesToPurge) {
         try {
@@ -78,39 +52,49 @@ async function handleCleanup(req: Request) {
 
             if (storageError) {
               console.warn(`Storage delete error for file ${file.id}:`, storageError.message);
-              // Đánh dấu pending_delete để lần sau thử lại
               await supabaseAdmin
                 .from('room_files')
                 .update({ status: 'pending_delete' })
                 .eq('id', file.id);
-              errors.push({ id: file.id, error: storageError.message });
+              fileErrors.push({ id: file.id, error: storageError.message });
               continue;
             }
           }
 
-          // Xóa bản ghi khỏi database sau khi Storage đã xác nhận xóa thành công
           const { error: dbError } = await supabaseAdmin
             .from('room_files')
             .delete()
             .eq('id', file.id);
 
           if (dbError) {
-            errors.push({ id: file.id, error: dbError.message });
+            fileErrors.push({ id: file.id, error: dbError.message });
           } else {
-            purgedCount++;
+            purgedFilesCount++;
           }
         } catch (err: any) {
-          errors.push({ id: file.id, error: err?.message || 'Unknown error' });
+          fileErrors.push({ id: file.id, error: err?.message || 'Unknown error' });
         }
       }
     }
 
+    // 2. TÌM VÀ XÓA VĨNH VIỄN TIN NHẮN TRONG THÙNG RÁC QUÁ 30 NGÀY HOẶC PENDING_DELETE:
+    let purgedMessagesCount = 0;
+    const { data: messagesToPurge, error: msgFetchError } = await supabaseAdmin
+      .from('room_messages')
+      .delete()
+      .or(`status.eq.pending_delete,and(status.eq.trash,deleted_at.lte.${thirtyDaysAgoIso})`)
+      .select('id');
+
+    if (!msgFetchError && messagesToPurge) {
+      purgedMessagesCount = messagesToPurge.length;
+    }
+
     return NextResponse.json({
       success: true,
-      movedToTrash: movedToTrashCount,
-      purged: purgedCount,
-      totalToPurge: filesToPurge?.length || 0,
-      errors: errors.length > 0 ? errors : undefined,
+      purgedFiles: purgedFilesCount,
+      purgedMessages: purgedMessagesCount,
+      totalFilesToPurge: filesToPurge?.length || 0,
+      errors: fileErrors.length > 0 ? fileErrors : undefined,
     });
   } catch (err: any) {
     console.error('Unexpected cleanup error:', err);
